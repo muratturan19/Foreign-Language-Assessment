@@ -108,7 +108,7 @@ class AppSettings(BaseModel):
         description="Optional sampling temperature for GPT-5 evaluations; omit to use API default.",
     )
     use_config_based_prompts: bool = Field(
-        default=False,
+        default=True,
         description="Use evaluator_system prompts from config files instead of hardcoded prompt",
     )
 
@@ -134,7 +134,7 @@ class AppSettings(BaseModel):
             gpt5_api_base_url=os.getenv("GPT5_API_BASE_URL", "https://api.openai.com/v1"),
             gpt5_model=os.getenv("GPT5_MODEL", "gpt-5"),
             gpt5_temperature=_load_temperature(),
-            use_config_based_prompts=os.getenv("USE_CONFIG_BASED_PROMPTS", "false").lower() == "true",
+            use_config_based_prompts=os.getenv("USE_CONFIG_BASED_PROMPTS", "true").lower() == "true",
         )
 
 

@@ -13,8 +13,14 @@ SMTP_USERNAME=demo@example.com
 SMTP_PASSWORD=change-me
 EMAIL_DEFAULT_SENDER=coach@example.com
 
-# Optional: SendGrid configuration
-SENDGRID_API_KEY=
+# Optional: SendGrid configuration (recommended for production)
+# SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxx
+
+# GPT-5 API Configuration (required for LLM-based evaluations)
+GPT5_API_KEY=your-gpt5-api-key-here
+GPT5_API_BASE_URL=https://api.openai.com/v1
+GPT5_MODEL=gpt-4
+GPT5_TEMPERATURE=0.3
 
 # Frontend build variables (must match backend values)
 VITE_API_BASE_URL=https://your-app.onrender.com

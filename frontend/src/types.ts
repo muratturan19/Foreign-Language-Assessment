@@ -45,7 +45,7 @@ export interface CommonError {
 }
 
 export interface StandardEvaluation {
-  standard_id: "toefl" | "ielts";
+  standard_id: "toefl" | "itep" | "ielts";
   label: string;
   overall?: number | null;
   cefr?: string | null;

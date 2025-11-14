@@ -23,7 +23,7 @@ import type {
   InteractionMode,
   SessionFinishResponse
 } from "../types";
-import { CLOSING_MESSAGE } from "../constants";
+import { isClosingMessageContent } from "../utils/messages";
 
 type EmailFeedbackState = {
   type: "success" | "error" | "warning" | "info";
@@ -481,8 +481,7 @@ export function ChatPanel() {
     if (lastSpokenIdRef.current === lastMessage.id) return;
 
     lastSpokenIdRef.current = lastMessage.id;
-    const textToSpeak =
-      lastMessage.content.trim() === CLOSING_MESSAGE ? "Thank you." : lastMessage.content;
+    const textToSpeak = isClosingMessageContent(lastMessage.content) ? "Thank you." : lastMessage.content;
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = "en-US";
     utterance.rate = 0.85;
@@ -1331,7 +1330,7 @@ export function ChatPanel() {
                   <div className="space-y-4">
                     {transcript.map((message) => {
                       if (message.role === "assistant") {
-                        const isClosingMessage = message.content.trim() === CLOSING_MESSAGE;
+                        const isClosingMessage = isClosingMessageContent(message.content);
                         const isActive = isRecording && activePromptId === message.id;
                         const disabled =
                           !speechSupported ||

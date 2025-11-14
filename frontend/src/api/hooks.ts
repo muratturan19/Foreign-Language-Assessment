@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 import { api } from "./client";
-import { CLOSING_MESSAGE } from "../constants";
+import { isClosingMessageContent } from "../utils/messages";
 import type {
   ChatMessage,
   ChatResponse,
@@ -65,7 +65,8 @@ export function useChat(sessionId?: string) {
       if (trimmedAssistant) {
         const lastAssistant = [...history].reverse().find((message) => message.role === "assistant");
         const isDuplicateClosing =
-          trimmedAssistant === CLOSING_MESSAGE && lastAssistant?.content.trim() === CLOSING_MESSAGE;
+          isClosingMessageContent(trimmedAssistant) &&
+          (lastAssistant?.content ? isClosingMessageContent(lastAssistant.content) : false);
 
         if (!isDuplicateClosing) {
           const assistantMessage: ChatMessage = {

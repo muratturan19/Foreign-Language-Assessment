@@ -517,7 +517,7 @@ def evaluate_transcript(
     gpt_payload: dict | None = None
     try:
         client = get_gpt5_client()
-        gpt_payload = client.generate_evaluation(transcript, metadata, metrics_payload, configs=configs)
+        gpt_payload = client.generate_evaluation(transcript, metadata, metrics_payload)
     except GPT5APIError as exc:
         warnings.append(f"GPT-5 evaluation unavailable: {exc}")
 

@@ -294,7 +294,6 @@ def build_html_report(evaluation: DualEvaluationResponse, session_metadata: Opti
             badge_text(toefl_badge, "TOEFL"),
             badge_text(itep_badge, "iTEP"),
             badge_text(ielts_badge, "IELTS"),
-            f"Consensus CEFR: {evaluation.crosswalk.consensus_cefr}",
         )
     )
 
@@ -353,7 +352,6 @@ def build_html_report(evaluation: DualEvaluationResponse, session_metadata: Opti
             <p>{badges}</p>
             {participant_summary_html}
             {session_summary_html}
-            <p><strong>Consensus CEFR:</strong> {evaluation.crosswalk.consensus_cefr}</p>
             <p><strong>Cross-standard note:</strong> {evaluation.crosswalk.notes}</p>
         </div>
         {warnings_html}

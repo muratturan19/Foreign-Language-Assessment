@@ -40,6 +40,27 @@ npm run dev
 
 Geliştirme sunucusu `http://localhost:5173` adresinde çalışır ve API isteklerini Vite proxy üzerinden backend'e yönlendirir.
 
+## 🚀 Render'a Deploy Etme
+
+Bu uygulama Render platformunda kolayca deploy edilebilir. Tüm fonksiyonlar (email gönderme, ses dosyası işleme) çalışır.
+
+### Hızlı Başlangıç
+
+1. Repository'yi Render'a bağlayın
+2. Environment variables'ları ekleyin (APP_SECRET_TOKEN, email ayarları, GPT API key)
+3. Deploy edin (otomatik FFmpeg kurulumu ve frontend build)
+
+**Detaylı rehber**: [RENDER_QUICKSTART.md](./RENDER_QUICKSTART.md)
+**Kapsamlı dokümantasyon**: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)
+
+### Özellikler
+
+- ✅ FFmpeg ile otomatik ses dosyası işleme
+- ✅ SMTP/SendGrid email entegrasyonu
+- ✅ Persistent disk ile audio/report saklama
+- ✅ Health check ve auto-deploy
+- ✅ React frontend static serving
+
 ## Testler
 
 Backend testlerini çalıştırmak için depo kök dizinindeyken:

@@ -20,7 +20,7 @@ from ..models import (
 from .gpt5_client import GPT5APIError, get_gpt5_client
 
 CONFIG_ROOT = Path(__file__).resolve().parents[3] / "configs"
-SUPPORTED_STANDARDS: Sequence[str] = ("toefl", "ielts")
+SUPPORTED_STANDARDS: Sequence[str] = ("toefl", "itep", "ielts")
 DEFAULT_VERSION = "v1"
 
 
@@ -75,6 +75,14 @@ def _score_toefl_dimension(dimension_id: str, metrics: TranscriptMetrics) -> flo
     return max(0.0, min(4.0, score))
 
 
+def _score_itep_dimension(dimension_id: str, metrics: TranscriptMetrics) -> float:
+    """Reuse TOEFL heuristics and scale to the iTEP 0–6 range."""
+
+    toefl_score = _score_toefl_dimension(dimension_id, metrics)
+    scaled = toefl_score * 1.5
+    return max(0.0, min(6.0, scaled))
+
+
 def _score_ielts_dimension(dimension_id: str, metrics: TranscriptMetrics) -> float:
     base = min(1.0, metrics.total_words / 180)
     diversity = min(1.0, metrics.unique_words / 110)
@@ -105,6 +113,17 @@ def _comment_for_score(score: float, standard_id: str) -> str:
         if score >= 1.5:
             return "Develop longer turns with clearer structure."
         return "Significant gaps—focus on intelligibility and completeness."
+
+    if standard_id == "itep":
+        if score >= 5.0:
+            return "Confident, polished delivery with professional nuance."
+        if score >= 4.0:
+            return "Strong communication; refine consistency and precision."
+        if score >= 3.0:
+            return "Developing control; expand support and smooth pacing."
+        if score >= 2.0:
+            return "Basic intelligibility; build range and fuller responses."
+        return "Severe breakdowns—focus on foundational speaking skills."
 
     if score >= 7.5:
         return "Confident, natural performance with advanced range."
@@ -272,6 +291,9 @@ def _build_standard_result(standard_id: str, config: dict, metrics: TranscriptMe
     if standard_id == "toefl":
         scorer = _score_toefl_dimension
         scale_max = 4.0
+    elif standard_id == "itep":
+        scorer = _score_itep_dimension
+        scale_max = 6.0
     else:
         scorer = _score_ielts_dimension
         scale_max = 9.0
@@ -285,6 +307,13 @@ def _build_standard_result(standard_id: str, config: dict, metrics: TranscriptMe
     overall = sum(weights[cid] * criteria[cid].score for cid in weights)
     round_to = config.get("scoring", {}).get("round_to", 2 if standard_id == "toefl" else 1)
     overall = round(overall, round_to)
+    scale_info = config.get("scoring", {}).get("overall_scale", {})
+    min_overall = scale_info.get("min")
+    max_overall = scale_info.get("max")
+    if isinstance(min_overall, (int, float)):
+        overall = max(min_overall, overall)
+    if isinstance(max_overall, (int, float)):
+        overall = min(max_overall, overall)
     cefr = _map_score_to_cefr(overall, config.get("mapping", {}).get("to_cefr", []))
 
     evaluator_output = {
@@ -363,10 +392,12 @@ def _summarise_crosswalk(standards: List[StandardEvaluation]) -> CrosswalkSummar
         if standard.status != "ok" or standard.overall is None or not standard.cefr:
             notes_parts.append(f"{standard.label} unavailable")
             continue
-        if standard.standard_id == "ielts":
-            notes_parts.append(f"IELTS {standard.overall:.1f}≈{standard.cefr}")
-        else:
+        if standard.standard_id == "toefl":
             notes_parts.append(f"TOEFL {standard.overall:.2f}≈{standard.cefr}")
+        elif standard.standard_id == "itep":
+            notes_parts.append(f"iTEP {standard.overall:.1f}≈{standard.cefr}")
+        else:
+            notes_parts.append(f"IELTS {standard.overall:.1f}≈{standard.cefr}")
 
     if len({s.cefr for s in valid}) <= 1 and valid:
         notes_suffix = "; consistent."
@@ -379,7 +410,12 @@ def _summarise_crosswalk(standards: List[StandardEvaluation]) -> CrosswalkSummar
 
     strengths: List[str] = []
     for standard in valid:
-        scale_max = 4.0 if standard.standard_id == "toefl" else 9.0
+        if standard.standard_id == "toefl":
+            scale_max = 4.0
+        elif standard.standard_id == "itep":
+            scale_max = 6.0
+        else:
+            scale_max = 9.0
         sorted_criteria = sorted(
             standard.criteria.items(),
             key=lambda item: item[1].score / scale_max if scale_max else 0,

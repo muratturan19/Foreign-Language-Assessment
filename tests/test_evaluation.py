@@ -41,6 +41,32 @@ def test_evaluation_returns_scores():
                 ],
             },
             {
+                "standard_id": "itep",
+                "label": "iTEP Interview (Speaking)",
+                "overall": 4.6,
+                "cefr": "B2",
+                "criteria": {
+                    "delivery": {"score": 4.5, "comment": "Solid delivery."},
+                    "language_use": {"score": 4.6, "comment": "Good range."},
+                    "topic_dev": {"score": 4.7, "comment": "Organized answers."},
+                    "task": {"score": 4.4, "comment": "Responded fully."},
+                },
+                "common_errors": [
+                    {"issue": "Agreement phrase", "fix": "Say 'I agree'."}
+                ],
+                "recommendations": [
+                    "Use more advanced connectors.",
+                    "Extend examples with detail.",
+                    "Vary stress for emphasis.",
+                    "Review complex verb forms.",
+                    "Practice spontaneous follow-ups.",
+                ],
+                "evidence_quotes": [
+                    "I am agree with the statement because it helps me grow.",
+                    "I solved a big problem at work by talking with my team.",
+                ],
+            },
+            {
                 "standard_id": "ielts",
                 "label": "IELTS Speaking",
                 "overall": 6.5,
@@ -69,7 +95,7 @@ def test_evaluation_returns_scores():
         ],
         "crosswalk": {
             "consensus_cefr": "B2",
-            "notes": "IELTS and TOEFL align at B2.",
+            "notes": "TOEFL, iTEP, and IELTS align at B2.",
             "strengths": ["Delivery", "Topic Development"],
             "focus": ["Grammar range", "Detail"],
         },
@@ -84,12 +110,15 @@ def test_evaluation_returns_scores():
         result = evaluate_transcript(transcript, session_id="test-session")
 
     assert result.session.id == "test-session"
-    assert len(result.standards) == 2
+    assert len(result.standards) == 3
     toefl = next(std for std in result.standards if std.standard_id == "toefl")
+    itep = next(std for std in result.standards if std.standard_id == "itep")
     ielts = next(std for std in result.standards if std.standard_id == "ielts")
 
     assert toefl.overall is not None and 0 <= toefl.overall <= 4
+    assert itep.overall is not None and 0 <= itep.overall <= 6
     assert ielts.overall is not None and 0 <= ielts.overall <= 9
     assert toefl.common_errors, "Expected TOEFL evaluation to surface common errors"
     assert len(toefl.recommendations) >= 5
+    assert itep.cefr in {"A1", "A2", "B1", "B2", "C1", "C2", "Undetermined"}
     assert result.crosswalk.consensus_cefr in {"A1", "A2", "B1", "B2", "C1", "C2", "Undetermined"}

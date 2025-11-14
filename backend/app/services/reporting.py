@@ -152,7 +152,12 @@ def _format_criteria_rows(standard: StandardEvaluation) -> str:
     rows = []
     for criterion_id, criterion in standard.criteria.items():
         label = standard.criterion_labels.get(criterion_id, criterion_id.replace("_", " ").title())
-        max_scale = 4 if standard.standard_id == "toefl" else 9
+        if standard.standard_id == "toefl":
+            max_scale = 4
+        elif standard.standard_id == "itep":
+            max_scale = 6
+        else:
+            max_scale = 9
         rows.append(
             "<tr>"
             f"<td>{label}</td>"
@@ -184,9 +189,12 @@ def _render_standard_section(standard: StandardEvaluation) -> str:
     errors_list = _format_errors_list(standard)
     recs_list = "".join(f"<li>{item}</li>" for item in standard.recommendations)
     quotes_html = _format_quotes(standard.evidence_quotes)
-    overall_caption = (
-        f"{standard.overall:.2f} / 4" if standard.standard_id == "toefl" else f"Band {standard.overall:.1f}"
-    )
+    if standard.standard_id == "toefl":
+        overall_caption = f"{standard.overall:.2f} / 4"
+    elif standard.standard_id == "itep":
+        overall_caption = f"{standard.overall:.1f} / 6"
+    else:
+        overall_caption = f"Band {standard.overall:.1f}"
 
     return f"""
     <section class=\"card\">
@@ -268,6 +276,7 @@ def build_html_report(evaluation: DualEvaluationResponse, session_metadata: Opti
     standard_sections = "".join(_render_standard_section(std) for std in evaluation.standards)
 
     toefl_badge = next((s for s in evaluation.standards if s.standard_id == "toefl"), None)
+    itep_badge = next((s for s in evaluation.standards if s.standard_id == "itep"), None)
     ielts_badge = next((s for s in evaluation.standards if s.standard_id == "ielts"), None)
 
     def badge_text(standard: StandardEvaluation | None, denom: str) -> str:
@@ -275,12 +284,15 @@ def build_html_report(evaluation: DualEvaluationResponse, session_metadata: Opti
             return f"{denom} unavailable"
         if standard.standard_id == "toefl":
             return f"TOEFL {standard.overall:.2f}/4 (~{standard.cefr})"
+        if standard.standard_id == "itep":
+            return f"iTEP {standard.overall:.1f}/6 (~{standard.cefr})"
         return f"IELTS {standard.overall:.1f}/9 (~{standard.cefr})"
 
     badges = "".join(
         f"<span class=\"badge\">{text}</span>"
         for text in (
             badge_text(toefl_badge, "TOEFL"),
+            badge_text(itep_badge, "iTEP"),
             badge_text(ielts_badge, "IELTS"),
             f"Consensus CEFR: {evaluation.crosswalk.consensus_cefr}",
         )

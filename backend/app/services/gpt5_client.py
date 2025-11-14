@@ -38,6 +38,7 @@ class GPT5Client:
         transcript: Iterable[ChatMessage],
         metadata: TranscriptMetadata,
         metrics: Mapping[str, object],
+        configs: Mapping[str, dict] | None = None,
     ) -> dict:
         """Request an evaluation from GPT-5 and parse the JSON response."""
 
@@ -45,7 +46,7 @@ class GPT5Client:
         metadata_payload = metadata.model_dump(mode="json")
 
         messages_payload = [
-            {"role": "system", "content": self._system_prompt()},
+            {"role": "system", "content": self._build_system_prompt(configs)},
             {
                 "role": "user",
                 "content": json.dumps(
@@ -105,6 +106,130 @@ class GPT5Client:
             raise GPT5APIError("GPT-5 response must be a JSON object")
 
         return parsed
+
+    def _build_system_prompt(self, configs: Mapping[str, dict] | None = None) -> str:
+        """Build system prompt using config-based evaluator prompts if available."""
+        from ..config import get_settings
+
+        settings = get_settings()
+
+        # If feature flag is disabled or configs not provided, use hardcoded prompt
+        if not settings.use_config_based_prompts or not configs:
+            return self._system_prompt()
+
+        # Build config-based prompt
+        prompt_parts = []
+
+        # Add standard-specific evaluator system prompts
+        for standard_id in ("toefl", "itep", "ielts"):
+            config = configs.get(standard_id)
+            if not config:
+                continue
+
+            evaluator_prompt = config.get("prompts", {}).get("evaluator_system", "").strip()
+            if evaluator_prompt and "(DUMMY)" not in evaluator_prompt:
+                label = config.get("meta", {}).get("label", standard_id.upper())
+                prompt_parts.append(f"## {label}")
+                prompt_parts.append(evaluator_prompt)
+
+                # Add criteria descriptions
+                criteria = config.get("rubric", {}).get("criteria", [])
+                if criteria:
+                    prompt_parts.append(f"\n### Evaluation Criteria for {label}:")
+                    for criterion in criteria:
+                        criterion_id = criterion.get("id", "")
+                        criterion_label = criterion.get("label", criterion_id)
+                        description = criterion.get("description", "").strip()
+                        scale = criterion.get("scale", {})
+                        scale_min = scale.get("min", 0)
+                        scale_max = scale.get("max", 10)
+
+                        prompt_parts.append(f"- **{criterion_label}** ({criterion_id}): Scale {scale_min}–{scale_max}")
+                        if description and "(DUMMY)" not in description:
+                            prompt_parts.append(f"  {description}")
+
+                prompt_parts.append("")  # blank line between standards
+
+        # If we built custom prompts, use them; otherwise fall back to hardcoded
+        if prompt_parts:
+            # Add general instructions at the beginning
+            header = dedent('''
+                You are an expert English Speaking Assessment Rater with official training in TOEFL iBT Speaking, the iTEP Interview (Speaking) scale, and IELTS Speaking examination systems.
+
+                Your task is to analyze the full transcript of a spoken English interview and provide detailed evaluations according to the specific standards below.
+
+                **Important**: Return your evaluation as a single valid JSON object with the structure shown at the end of these instructions.
+            ''').strip()
+
+            # Add standard-specific instructions
+            body = "\n\n".join(prompt_parts)
+
+            # Add JSON output format
+            footer = dedent('''
+
+                ## Output Format
+
+                Return a single valid JSON object in this format:
+
+                {
+                  "standards": [
+                    {
+                      "standard_id": "toefl",
+                      "label": "TOEFL iBT Speaking",
+                      "overall": 3.2,
+                      "cefr": "B2",
+                      "criteria": {
+                        "delivery": {"score": 3.0, "comment": "Clear pacing with minor hesitations."},
+                        "language_use": {"score": 3.4, "comment": "Varied vocabulary with good control."},
+                        "topic_dev": {"score": 3.1, "comment": "Coherent structure with adequate detail."},
+                        "task": {"score": 3.2, "comment": "Addressed all parts of the prompt."}
+                      },
+                      "common_errors": [
+                        {"issue": "Agreement phrase", "fix": "Use 'I agree' instead of 'I am agree'."}
+                      ],
+                      "recommendations": [
+                        "Add more supporting details to extend responses.",
+                        "Practice complex sentence structures.",
+                        "Use varied discourse markers.",
+                        "Record and review for self-correction.",
+                        "Strengthen word stress patterns."
+                      ],
+                      "evidence_quotes": [
+                        "First relevant quote from the candidate.",
+                        "Second relevant quote from the candidate."
+                      ]
+                    },
+                    {
+                      "standard_id": "itep",
+                      "label": "iTEP Interview (Speaking)",
+                      "overall": 4.5,
+                      "cefr": "B2",
+                      "criteria": { ... }
+                    },
+                    {
+                      "standard_id": "ielts",
+                      "label": "IELTS Speaking",
+                      "overall": 6.5,
+                      "cefr": "B2",
+                      "criteria": { ... }
+                    }
+                  ],
+                  "crosswalk": {
+                    "consensus_cefr": "B2",
+                    "notes": "All three standards align at B2 level.",
+                    "strengths": ["Fluency", "Topic Development"],
+                    "focus": ["Grammar range", "Lexical precision"]
+                  },
+                  "warnings": ["Optional warnings about evaluation quality or data issues"]
+                }
+
+                Ensure the JSON is valid, uses double quotes, and includes all required fields.
+            ''').strip()
+
+            return f"{header}\n\n{body}\n\n{footer}"
+
+        # No valid config-based prompts found, fall back to hardcoded
+        return self._system_prompt()
 
     @staticmethod
     def _system_prompt() -> str:

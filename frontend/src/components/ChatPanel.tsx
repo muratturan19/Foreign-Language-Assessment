@@ -736,23 +736,13 @@ export function ChatPanel() {
       });
 
       const subject = `${participant.full_name}- Assessment`;
-      const body = [
-        "Merhaba,",
-        "",
-        `Yeni oluşturulan dil değerlendirme raporu ${participant.full_name} (${participant.email}) tarafından oluşturulan değerlendirmeye aittir.`,
-        "Detaylı rapora aşağıdaki bağlantıdan ulaşabilirsiniz:",
-        report.report_url,
-        "Bu bağlantı güvenlik nedeniyle 7 gün içinde sona erecektir.",
-        "",
-        "Bu mesaj sistem tarafından otomatik gönderilmiştir.",
-      ].join("\n");
+      const body = `Merhaba, Yapay Zeka Destekli Yabancı Dil değerlendirme raporu ${participant.full_name} (${participant.email}) tarafından oluşturulan değerlendirmeye aittir. Detaylı rapora ekteki dosyalardan ulaşabilirsiniz.`;
 
       try {
         await sendEmail.mutateAsync({
           to: recipientEmail,
           subject,
           body,
-          links: [report.report_url],
           session_id: sessionId,
           attachments: reportAttachments,
         });
@@ -920,7 +910,7 @@ export function ChatPanel() {
               <div className="mt-5 space-y-3 rounded-2xl border border-cyan-300/50 bg-cyan-50/70 p-4 text-left dark:border-cyan-500/20 dark:bg-slate-900/60">
                 <h3 className="text-base font-semibold text-cyan-700 dark:text-cyan-200">Aydınlatma Metni</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Bu uygulama, yabancı dil yeterliliğinizi değerlendirmek amacıyla sesli ve yazılı yanıtlarınızı işler. Paylaştığınız bilgiler sadece değerlendirme süreci boyunca saklanır, üçüncü kişilerle paylaşılmaz ve dilediğiniz zaman silinebilir. Dil değerlendirme raporlarınız selintumer@gmail.com adresine iletilir.
+                  Bu uygulama, yabancı dil yeterliliğinizi değerlendirmek amacıyla sesli yanıtlarınızı işler. Paylaştığınız bilgiler sadece değerlendirme süreci boyunca saklanır, üçüncü kişilerle paylaşılmaz ve dilediğiniz zaman silinebilir. Dil değerlendirme raporlarınız selintumer@gmail.com adresine iletilir.
                 </p>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
                   <li>Kimlik ve iletişim bilgileriniz seans raporlarını oluşturmak ve size geri bildirim iletmek için kullanılır.</li>
@@ -1305,7 +1295,7 @@ export function ChatPanel() {
               </p>
               {evaluationInProgress && (
                 <p className="w-full rounded-xl border border-violet-300 bg-violet-50 px-4 py-3 text-xs font-medium text-violet-700 shadow-lg dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-100">
-                  Yapay zekâ değerlendirmesi devam ediyor. Analiz tamamlandığında puanlarınızı paylaşacağız.
+                  Yapay zekâ değerlendirmesi devam ediyor. Analiz tamamlandığında puanlarınızı sayfanın altında inceleyebilirsiniz.
                 </p>
               )}
               {generateReport.isPending && (
@@ -1454,7 +1444,7 @@ export function ChatPanel() {
                 </div>
                 <h3 className="mb-3 text-xl font-semibold text-slate-800 dark:text-white">Yapay Zekâ Geri Bildirimi</h3>
                 <p className="leading-relaxed text-slate-600 dark:text-slate-300">
-                  Değerlendirmeyi başlatarak TOEFL tarzı puanlama, CEFR seviyeleri ve kişiselleştirilmiş gelişim önerilerine ulaşabilirsiniz.
+                  Değerlendirmeyi başlatarak CEFR seviyeleri ve kişiselleştirilmiş gelişim önerilerine ulaşabilirsiniz.
                 </p>
               </div>
             </div>

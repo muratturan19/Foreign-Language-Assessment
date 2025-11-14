@@ -5,11 +5,20 @@ interface ScoreCardProps {
   evaluation: DualEvaluationResponse;
 }
 
-const ORDER = ["toefl", "ielts"] as const;
+const ORDER = ["toefl", "itep", "ielts"] as const;
+
+const SCALE_MAX: Record<StandardEvaluation["standard_id"], number> = {
+  toefl: 4,
+  itep: 6,
+  ielts: 9,
+};
 
 function renderStandardHeader(standard: StandardEvaluation) {
   if (standard.standard_id === "toefl" && standard.overall != null) {
     return `TOEFL ${standard.overall.toFixed(2)}/4`;
+  }
+  if (standard.standard_id === "itep" && standard.overall != null) {
+    return `iTEP ${standard.overall.toFixed(1)}/6`;
   }
   if (standard.standard_id === "ielts" && standard.overall != null) {
     return `IELTS ${standard.overall.toFixed(1)}/9`;
@@ -55,7 +64,7 @@ function StandardDetails({ standard }: { standard: StandardEvaluation }) {
             <tbody>
               {criteriaEntries.map(([id, assessment]) => {
                 const label = standard.criterion_labels[id] ?? id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-                const max = standard.standard_id === "toefl" ? 4 : 9;
+                const max = SCALE_MAX[standard.standard_id] ?? 0;
                 return (
                   <tr key={id} className="border-t border-slate-100 dark:border-slate-700/40">
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{label}</td>

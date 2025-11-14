@@ -1444,7 +1444,7 @@ export function ChatPanel() {
                 </div>
                 <h3 className="mb-3 text-xl font-semibold text-slate-800 dark:text-white">Yapay Zekâ Geri Bildirimi</h3>
                 <p className="leading-relaxed text-slate-600 dark:text-slate-300">
-                  Değerlendirmeyi başlatarak TOEFL tarzı puanlama, CEFR seviyeleri ve kişiselleştirilmiş gelişim önerilerine ulaşabilirsiniz.
+                  Değerlendirmeyi başlatarak CEFR seviyeleri ve kişiselleştirilmiş gelişim önerilerine ulaşabilirsiniz.
                 </p>
               </div>
             </div>

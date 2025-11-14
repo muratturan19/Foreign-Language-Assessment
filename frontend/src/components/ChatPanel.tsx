@@ -1295,7 +1295,7 @@ export function ChatPanel() {
               </p>
               {evaluationInProgress && (
                 <p className="w-full rounded-xl border border-violet-300 bg-violet-50 px-4 py-3 text-xs font-medium text-violet-700 shadow-lg dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-100">
-                  Yapay zekâ değerlendirmesi devam ediyor. Analiz tamamlandığında puanlarınızı paylaşacağız.
+                  Yapay zekâ değerlendirmesi devam ediyor. Analiz tamamlandığında puanlarınızı sayfanın altında inceleyebilirsiniz.
                 </p>
               )}
               {generateReport.isPending && (

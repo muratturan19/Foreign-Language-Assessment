@@ -93,7 +93,7 @@ class AppSettings(BaseModel):
     target_email: EmailStr | None = Field(default=None, description="Default report recipient")
     app_base_url: str = Field(default="http://localhost:8000", description="Base URL for report links")
     store_transcripts: bool = Field(default=True, description="Whether to persist transcripts in memory")
-    secret_token: str = Field(default="dev-secret", description="Simple bearer token for auth")
+    secret_token: str = Field(..., description="Simple bearer token for auth")
     report_language: str = Field(default="en", description="Report language code")
     trusted_origins: tuple[str, ...] = Field(
         default=DEFAULT_TRUSTED_ORIGINS,
@@ -114,7 +114,7 @@ class AppSettings(BaseModel):
             target_email=os.getenv("TARGET_EMAIL"),
             app_base_url=os.getenv("APP_BASE_URL", "http://localhost:8000"),
             store_transcripts=os.getenv("STORE_TRANSCRIPTS", "true").lower() == "true",
-            secret_token=os.getenv("APP_SECRET_TOKEN", "dev-secret"),
+            secret_token=_load_secret_token(),
             report_language=os.getenv("REPORT_LANGUAGE", "en"),
             trusted_origins=_load_trusted_origins(),
             email=EmailSettings(
@@ -131,6 +131,20 @@ class AppSettings(BaseModel):
             gpt5_model=os.getenv("GPT5_MODEL", "gpt-5"),
             gpt5_temperature=_load_temperature(),
         )
+
+
+def _load_secret_token() -> str:
+    token = os.getenv("APP_SECRET_TOKEN")
+    if token is None or token.strip() == "":
+        raise ValueError(
+            "APP_SECRET_TOKEN must be set to a strong, non-empty value before starting the application."
+        )
+
+    token = token.strip()
+    if token.lower() == "dev-secret" or len(token) < 32:
+        raise ValueError("APP_SECRET_TOKEN must be at least 32 characters and not use the insecure default.")
+
+    return token
 
 
 def _load_temperature() -> float | None:
@@ -160,7 +174,6 @@ def get_settings() -> AppSettings:
 
 def set_gpt5_api_key(api_key: str) -> AppSettings:
     os.environ["GPT5_API_KEY"] = api_key
-    _persist_env_var("GPT5_API_KEY", api_key)
     get_settings.cache_clear()
     return get_settings()
 
@@ -182,7 +195,6 @@ def set_email_settings(**kwargs: str | int | None) -> AppSettings:
             continue
         env_key = env_mapping[key]
         os.environ[env_key] = str(value)
-        _persist_env_var(env_key, str(value))
         updated = True
 
     if updated:

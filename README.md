@@ -16,7 +16,7 @@ cp .env.example .env
 cp frontend/.env.example frontend/.env
 ```
 
-`.env` dosyasında gizli anahtarları ve e-posta yapılandırmasını güncelleyin. Varsayılan `APP_SECRET_TOKEN` hem backend hem frontend için aynı olmalıdır.
+`.env` dosyasında gizli anahtarları ve e-posta yapılandırmasını güncelleyin. `APP_SECRET_TOKEN` değeri artık zorunludur ve en az 32 karakterden oluşan güçlü bir anahtar olmalıdır; uygulama bu değişken tanımlanmadan veya varsayılan `dev-secret` değeri kullanılırsa başlatılamaz. Backend ve frontend aynı anahtarı paylaşmalıdır.
 
 ### 2. Backend'i Çalıştırın
 

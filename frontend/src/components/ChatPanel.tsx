@@ -736,23 +736,13 @@ export function ChatPanel() {
       });
 
       const subject = `${participant.full_name}- Assessment`;
-      const body = [
-        "Merhaba,",
-        "",
-        `Yeni oluşturulan dil değerlendirme raporu ${participant.full_name} (${participant.email}) tarafından oluşturulan değerlendirmeye aittir.`,
-        "Detaylı rapora aşağıdaki bağlantıdan ulaşabilirsiniz:",
-        report.report_url,
-        "Bu bağlantı güvenlik nedeniyle 7 gün içinde sona erecektir.",
-        "",
-        "Bu mesaj sistem tarafından otomatik gönderilmiştir.",
-      ].join("\n");
+      const body = `Merhaba, Yapay Zeka Destekli Yabancı Dil değerlendirme raporu ${participant.full_name} (${participant.email}) tarafından oluşturulan değerlendirmeye aittir. Detaylı rapora ekteki dosyalardan ulaşabilirsiniz.`;
 
       try {
         await sendEmail.mutateAsync({
           to: recipientEmail,
           subject,
           body,
-          links: [report.report_url],
           session_id: sessionId,
           attachments: reportAttachments,
         });

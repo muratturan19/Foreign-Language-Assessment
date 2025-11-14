@@ -158,9 +158,6 @@ export function ScoreCard({ evaluation }: ScoreCardProps) {
               {renderStandardHeader(standard)}
             </span>
           ))}
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
-            Ortak CEFR: {evaluation.crosswalk.consensus_cefr}
-          </span>
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
           <p className="font-semibold">Çapraz Değerlendirme Notu</p>

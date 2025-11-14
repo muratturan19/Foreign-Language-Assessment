@@ -114,3 +114,29 @@ def test_email_with_unknown_session_id():
     )
     assert email_resp.status_code == 404
     assert email_resp.json()["detail"] == "Session not found"
+
+
+def test_cors_disallows_untrusted_origin():
+    client = TestClient(app)
+
+    disallowed_response = client.options(
+        "/api/session/start",
+        headers={
+            "Origin": "https://malicious.example",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Authorization",
+        },
+    )
+    assert disallowed_response.status_code == 400
+
+    allowed_origin = get_settings().trusted_origins[0]
+    allowed_response = client.options(
+        "/api/session/start",
+        headers={
+            "Origin": allowed_origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Authorization",
+        },
+    )
+    assert allowed_response.status_code == 200
+    assert allowed_response.headers.get("access-control-allow-origin") == allowed_origin

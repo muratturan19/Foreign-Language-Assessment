@@ -1,11 +1,13 @@
+import os
+
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import BaseModel, Field, EmailStr
-import os
 
 
 ENV_FILE_PATH = Path(__file__).resolve().parents[2] / ".env"
+DEFAULT_TRUSTED_ORIGINS: tuple[str, ...] = ("http://localhost:5173",)
 
 
 def _load_env_file() -> None:
@@ -93,6 +95,10 @@ class AppSettings(BaseModel):
     store_transcripts: bool = Field(default=True, description="Whether to persist transcripts in memory")
     secret_token: str = Field(default="dev-secret", description="Simple bearer token for auth")
     report_language: str = Field(default="en", description="Report language code")
+    trusted_origins: tuple[str, ...] = Field(
+        default=DEFAULT_TRUSTED_ORIGINS,
+        description="Origins permitted to access the API via CORS",
+    )
     email: EmailSettings = Field(default_factory=EmailSettings)
     gpt5_api_key: str | None = Field(default=None, description="API key for GPT-5 evaluation")
     gpt5_api_base_url: str = Field(default="https://api.openai.com/v1", description="Base URL for GPT-5 compatible APIs")
@@ -110,6 +116,7 @@ class AppSettings(BaseModel):
             store_transcripts=os.getenv("STORE_TRANSCRIPTS", "true").lower() == "true",
             secret_token=os.getenv("APP_SECRET_TOKEN", "dev-secret"),
             report_language=os.getenv("REPORT_LANGUAGE", "en"),
+            trusted_origins=_load_trusted_origins(),
             email=EmailSettings(
                 provider=os.getenv("EMAIL_PROVIDER", "smtp"),
                 smtp_host=os.getenv("SMTP_HOST"),
@@ -135,6 +142,15 @@ def _load_temperature() -> float | None:
         return float(raw)
     except ValueError as exc:  # pragma: no cover - config error surfaced during startup
         raise ValueError("GPT5_TEMPERATURE must be a numeric value") from exc
+
+
+def _load_trusted_origins() -> tuple[str, ...]:
+    raw = os.getenv("APP_TRUSTED_ORIGINS")
+    if raw is None or raw.strip() == "":
+        return DEFAULT_TRUSTED_ORIGINS
+
+    origins = tuple(origin.strip() for origin in raw.split(",") if origin.strip())
+    return origins or DEFAULT_TRUSTED_ORIGINS
 
 
 @lru_cache(maxsize=1)

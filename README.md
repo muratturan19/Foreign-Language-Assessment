@@ -18,6 +18,15 @@ cp frontend/.env.example frontend/.env
 
 `.env` dosyasında gizli anahtarları ve e-posta yapılandırmasını güncelleyin. `APP_SECRET_TOKEN` değeri artık zorunludur ve en az 32 karakterden oluşan güçlü bir anahtar olmalıdır; uygulama bu değişken tanımlanmadan veya varsayılan `dev-secret` değeri kullanılırsa başlatılamaz. Backend ve frontend aynı anahtarı paylaşmalıdır.
 
+Güvenli bir token oluşturmak için aşağıdaki komutlardan birini kullanabilirsiniz:
+```bash
+# Python kullanarak
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# veya OpenSSL kullanarak
+openssl rand -base64 32
+```
+
 ### 2. Backend'i Çalıştırın
 
 ```bash

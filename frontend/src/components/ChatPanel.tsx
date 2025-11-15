@@ -23,6 +23,7 @@ import type {
   SessionFinishResponse
 } from "../types";
 import { isClosingMessageContent } from "../utils/messages";
+import { encodeStringToBase64 } from "../utils/encoding";
 
 type EmailFeedbackState = {
   type: "success" | "error" | "warning" | "info";

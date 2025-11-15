@@ -740,18 +740,34 @@ export function ChatPanel() {
         const reportFilename = evaluationResult.session.id
           ? `assessment_report_${evaluationResult.session.id}.html`
           : "assessment_report.html";
+
+        console.log("[Email] Preparing report attachment:", reportFilename);
+        console.log("[Email] Report HTML length:", report.html?.length || 0);
+
+        if (!report.html || report.html.trim().length === 0) {
+          throw new Error("Report HTML is empty or undefined");
+        }
+
         const encodedReport = encodeStringToBase64(report.html);
+        console.log("[Email] Report encoded successfully, length:", encodedReport.length);
+
         reportAttachments.push({
           filename: reportFilename,
           content_type: "text/html",
           data: encodedReport,
         });
-        console.log("[Email] Report attachment prepared:", reportFilename);
+        console.log("[Email] Report attachment prepared successfully:", reportFilename);
       } catch (error) {
-        console.error("[Email] Failed to prepare report attachment", error);
+        console.error("[Email] Failed to prepare report attachment:", error);
+        console.error("[Email] Error details:", {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          reportHtmlAvailable: !!report?.html,
+          reportHtmlLength: report?.html?.length || 0,
+        });
         setEmailFeedback({
           type: "error",
-          message: "Rapor e-posta eki hazırlanırken bir hata oluştu.",
+          message: `Rapor e-posta eki hazırlanırken bir hata oluştu: ${error instanceof Error ? error.message : String(error)}`,
         });
         return;
       }

@@ -26,7 +26,42 @@ services:
         value: en
       - key: STORE_TRANSCRIPTS
         value: true
-      # Email and GPT5 keys should be added manually in Render Dashboard for security
+
+      # Email Configuration - Add manually in Render Dashboard
+      - key: EMAIL_PROVIDER
+        value: smtp
+      - key: SMTP_HOST
+        sync: false  # Add manually in Render Dashboard
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false  # Add manually in Render Dashboard
+      - key: SMTP_PASSWORD
+        sync: false  # Add manually in Render Dashboard
+      - key: EMAIL_DEFAULT_SENDER
+        sync: false  # Add manually in Render Dashboard
+      - key: TARGET_EMAIL
+        sync: false  # Add manually in Render Dashboard
+
+      # GPT-5 API Configuration - Add manually in Render Dashboard for security
+      - key: GPT5_API_KEY
+        sync: false  # Add manually in Render Dashboard
+      - key: GPT5_API_BASE_URL
+        value: https://api.openai.com/v1
+      - key: GPT5_MODEL
+        value: gpt-4
+      - key: GPT5_TEMPERATURE
+        value: "0.3"
+
+      # Frontend build variables (must match backend values)
+      # These are used during build time by Vite
+      - key: VITE_API_BASE_URL
+        value: https://foreign-language-assessment.onrender.com  # Update with your actual URL
+      - key: VITE_APP_SECRET_TOKEN
+        fromService:
+          type: web
+          name: foreign-language-assessment
+          envVarKey: APP_SECRET_TOKEN  # Use the same token as backend
 
     # Persistent disk for audio files and reports
     disk:

@@ -158,5 +158,9 @@ def store_session_audio(payload: SessionAudioUploadRequest) -> tuple[str, Path]:
     session.audio_recording_path = target_path
     session.audio_recorded_at = report_date
 
+    print(f"[AUDIO STORE] ✅ Stored audio recording for session {session.session_id}")
+    print(f"[AUDIO STORE] Path: {target_path}")
+    print(f"[AUDIO STORE] Size: {len(mp3_audio)} bytes")
+    print(f"[AUDIO STORE] Session audio_recording_path set to: {session.audio_recording_path}")
     logger.info("Stored audio recording for session %s at %s", session.session_id, target_path)
     return filename, target_path

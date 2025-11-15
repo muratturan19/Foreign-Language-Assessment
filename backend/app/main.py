@@ -122,8 +122,17 @@ def chat(payload: ChatRequest, _: str = Depends(get_current_token)) -> ChatRespo
 
 @app.post("/api/session/audio", response_model=SessionAudioUploadResponse, tags=["session"])
 def upload_session_audio(payload: SessionAudioUploadRequest, _: str = Depends(get_current_token)) -> SessionAudioUploadResponse:
+    print(f"\n{'='*80}")
+    print(f"[AUDIO UPLOAD] Uploading audio for session {payload.session_id}")
+    print(f"[AUDIO UPLOAD] Audio MIME type: {payload.mime_type}")
+    print(f"[AUDIO UPLOAD] Audio base64 length: {len(payload.audio_base64)} characters")
+    print(f"{'='*80}")
     logger.info("Uploading audio for session %s", payload.session_id)
     filename, stored_path = store_session_audio(payload)
+    print(f"[AUDIO UPLOAD] ✅ Audio successfully uploaded and stored!")
+    print(f"[AUDIO UPLOAD] Filename: {filename}")
+    print(f"[AUDIO UPLOAD] Path: {stored_path}")
+    print(f"{'='*80}\n")
     logger.info("Audio successfully uploaded and stored at %s for session %s", stored_path, payload.session_id)
     return SessionAudioUploadResponse(
         filename=filename,
@@ -210,6 +219,9 @@ def download_report(token: str) -> FileResponse:
 def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)) -> EmailResponse:
     attachments: List[EmailAttachment] = list(payload.attachments or [])
 
+    print(f"\n{'='*80}")
+    print(f"[EMAIL ENDPOINT] Preparing report email for {payload.to} (session_id={payload.session_id or 'n/a'})")
+    print(f"{'='*80}")
     logger.info(
         "Preparing report email for %s (session_id=%s)",
         payload.to,
@@ -224,12 +236,20 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found") from exc
 
         audio_path = getattr(session, "audio_recording_path", None)
+        print(f"[EMAIL ATTACHMENT] Checking audio_recording_path: {audio_path}")
         if audio_path:
+            print(f"[EMAIL ATTACHMENT] Audio recording path found for session {session.session_id}: {audio_path}")
             logger.info("Audio recording path found for session %s: %s", session.session_id, audio_path)
             if Path(audio_path).exists():
+                print(f"[EMAIL ATTACHMENT] Audio file EXISTS at path: {audio_path}")
+                file_size = Path(audio_path).stat().st_size
+                print(f"[EMAIL ATTACHMENT] Audio file size: {file_size} bytes")
                 already_attached = {attachment.filename for attachment in attachments}
                 audio_filename = Path(audio_path).name
+                print(f"[EMAIL ATTACHMENT] Audio filename: {audio_filename}")
+                print(f"[EMAIL ATTACHMENT] Already attached files: {already_attached}")
                 if audio_filename in already_attached:
+                    print(f"[EMAIL ATTACHMENT] ⚠️ Audio recording {audio_filename} ALREADY ATTACHED")
                     logger.info(
                         "Audio recording %s already attached for session %s",
                         audio_filename,
@@ -237,8 +257,11 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
                     )
                 else:
                     try:
+                        print(f"[EMAIL ATTACHMENT] Reading audio file from disk...")
                         audio_bytes = Path(audio_path).read_bytes()
+                        print(f"[EMAIL ATTACHMENT] Audio file read successfully: {len(audio_bytes)} bytes")
                         encoded = base64.b64encode(audio_bytes).decode("ascii")
+                        print(f"[EMAIL ATTACHMENT] Audio encoded to base64: {len(encoded)} characters")
                         attachments.append(
                             EmailAttachment(
                                 filename=audio_filename,
@@ -246,20 +269,24 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
                                 data=encoded,
                             )
                         )
+                        print(f"[EMAIL ATTACHMENT] ✅ SUCCESS! Audio recording {audio_filename} ATTACHED ({len(audio_bytes)} bytes)")
                         logger.info(
                             "Attached audio recording %s for session %s",
                             audio_filename,
                             session.session_id,
                         )
                     except OSError as exc:  # pragma: no cover - filesystem error
+                        print(f"[EMAIL ATTACHMENT] ❌ ERROR! Unable to attach audio recording: {exc}")
                         logger.warning("Unable to attach audio recording for session %s: %s", session.session_id, exc)
             else:
+                print(f"[EMAIL ATTACHMENT] ❌ ERROR! Audio recording path DOES NOT EXIST: {audio_path}")
                 logger.warning(
                     "Audio recording path does not exist for session %s: %s",
                     session.session_id,
                     audio_path,
                 )
         else:
+            print(f"[EMAIL ATTACHMENT] ⚠️ No audio_recording_path found for session {session.session_id}")
             logger.info("No audio recording path found for session %s", session.session_id)
 
         report_record = get_latest_report_for_session(payload.session_id)
@@ -300,6 +327,12 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
             )
 
     updated_payload = payload.model_copy(update={"attachments": attachments})
+    print(f"\n[EMAIL SEND] Total attachments to send: {len(attachments)}")
+    for idx, att in enumerate(attachments):
+        print(f"[EMAIL SEND]   Attachment {idx+1}: {att.filename} ({att.content_type}, {len(att.data)} chars base64)")
+    print(f"[EMAIL SEND] Sending email to: {payload.to}")
+    print(f"[EMAIL SEND] Subject: {payload.subject}")
+    print(f"{'='*80}\n")
     logger.info("Sending report email with %d attachment(s)", len(attachments))
     return send_email(updated_payload)
 
@@ -307,6 +340,8 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
 @app.get("/api/config/email", response_model=EmailConfigStatus, tags=["config"])
 def email_status(_: str = Depends(get_current_token)) -> EmailConfigStatus:
     settings_snapshot = get_settings()
+    print(f"\n[EMAIL CONFIG] Current TARGET_EMAIL: {settings_snapshot.target_email}")
+    print(f"[EMAIL CONFIG] Email configured: {settings_snapshot.email.is_configured}")
     logger.info(f"[Email Config] Current TARGET_EMAIL: {settings_snapshot.target_email}")
     logger.info(f"[Email Config] Email configured: {settings_snapshot.email.is_configured}")
     missing = settings_snapshot.email.missing_fields()

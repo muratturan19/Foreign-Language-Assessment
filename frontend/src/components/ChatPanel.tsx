@@ -105,7 +105,9 @@ export function ChatPanel() {
   const audioStopPromiseRef = useRef<Promise<void> | null>(null);
   const audioStopResolverRef = useRef<(() => void) | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const audioBlobRef = useRef<Blob | null>(null);
   const [audioMimeType, setAudioMimeType] = useState<string | null>(null);
+  const audioMimeTypeRef = useRef<string | null>(null);
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [audioUploadInfo, setAudioUploadInfo] = useState<string | null>(null);
@@ -256,7 +258,9 @@ export function ChatPanel() {
           const blob = new Blob(audioChunksRef.current, { type: effectiveMime });
           console.log("[Audio] Audio blob created, size:", blob.size, "bytes, type:", effectiveMime);
           setAudioBlob(blob);
+          audioBlobRef.current = blob;
           setAudioMimeType(effectiveMime);
+          audioMimeTypeRef.current = effectiveMime;
           audioChunksRef.current = [];
           if (audioStreamRef.current) {
             audioStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -532,6 +536,8 @@ export function ChatPanel() {
     setEmailFeedback(null);
     void stopAudioCapture();
     setAudioBlob(null);
+    audioBlobRef.current = null;
+    audioMimeTypeRef.current = null;
     setAudioUploadInfo(null);
     setAudioError(null);
     setIsAudioRecording(false);
@@ -635,10 +641,7 @@ export function ChatPanel() {
     try {
       console.log("[Finish] Stopping audio capture...");
       await stopAudioCapture();
-      console.log("[Finish] Audio capture stopped");
-
-      // Wait a bit for the audioBlob state to update after onstop is called
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log("[Finish] Audio capture stopped, blob stored in ref");
 
       const summary = await finishSession.mutateAsync({ session_id: sessionId });
       setSessionSummary(summary);
@@ -667,9 +670,11 @@ export function ChatPanel() {
       const report = await generateReport.mutateAsync({ evaluation: evaluationResult, session_metadata: metadata });
       setReportUrl(report.report_url);
 
-      // Get the latest audioBlob state value using a ref or closure
-      const currentAudioBlob = audioBlob;
-      console.log("[Finish] Current audio blob:", currentAudioBlob ? `${currentAudioBlob.size} bytes` : "null");
+      // Get the latest audioBlob from ref (synchronous access)
+      const currentAudioBlob = audioBlobRef.current;
+      const currentAudioMimeType = audioMimeTypeRef.current;
+      console.log("[Finish] Current audio blob from ref:", currentAudioBlob ? `${currentAudioBlob.size} bytes` : "null");
+      console.log("[Finish] Current audio MIME type from ref:", currentAudioMimeType);
 
       if (sessionId) {
         if (currentAudioBlob && currentAudioBlob.size > 0) {
@@ -680,7 +685,7 @@ export function ChatPanel() {
             const audioResult = await uploadSessionAudio.mutateAsync({
               session_id: sessionId,
               audio_base64: encoded,
-              mime_type: audioMimeType ?? currentAudioBlob.type,
+              mime_type: currentAudioMimeType ?? currentAudioBlob.type,
               report_date: metadata.report_generated_at,
             });
             console.log("[Finish] Audio upload successful:", audioResult.filename);

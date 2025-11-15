@@ -33,11 +33,31 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
         message.add_alternative(html_body, subtype="html")
 
     if payload.attachments:
-        for attachment in payload.attachments:
+        logger.info("Building email with %d attachment(s)", len(payload.attachments))
+        for idx, attachment in enumerate(payload.attachments):
             try:
+                logger.debug(
+                    "Processing attachment %d/%d: %s (type: %s, encoded size: %d bytes)",
+                    idx + 1,
+                    len(payload.attachments),
+                    attachment.filename,
+                    attachment.content_type,
+                    len(attachment.data),
+                )
                 file_bytes = base64.b64decode(attachment.data, validate=True)
+                logger.debug(
+                    "Attachment %s decoded successfully, size: %d bytes",
+                    attachment.filename,
+                    len(file_bytes),
+                )
             except (binascii.Error, ValueError) as exc:
-                logger.warning("Failed to decode email attachment %s: %s", attachment.filename, exc)
+                logger.error(
+                    "Failed to decode email attachment %s (type: %s, encoded size: %d): %s",
+                    attachment.filename,
+                    attachment.content_type,
+                    len(attachment.data) if attachment.data else 0,
+                    exc,
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Invalid attachment provided: {attachment.filename}",
@@ -54,6 +74,13 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
                 subtype=subtype,
                 filename=attachment.filename,
             )
+            logger.info(
+                "Attachment %s added successfully (%s/%s, %d bytes)",
+                attachment.filename,
+                maintype,
+                subtype,
+                len(file_bytes),
+            )
 
     return message
 
@@ -68,23 +95,53 @@ def send_email(payload: EmailRequest) -> EmailResponse:
             detail=f"Email service is not configured: missing {', '.join(missing)}",
         )
 
-    message = _build_email_message(payload, sender=str(settings.email.default_sender))
+    logger.info(
+        "Sending email to %s with subject '%s' and %d attachment(s)",
+        payload.to,
+        payload.subject,
+        len(payload.attachments) if payload.attachments else 0,
+    )
+
+    try:
+        message = _build_email_message(payload, sender=str(settings.email.default_sender))
+    except Exception as exc:
+        logger.exception("Failed to build email message: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to build email message: {str(exc)}",
+        ) from exc
+
     context = ssl.create_default_context()
 
     try:
+        logger.debug("Connecting to SMTP server %s:%d", settings.email.smtp_host, settings.email.smtp_port)
         if settings.email.smtp_port == 465:
             with smtplib.SMTP_SSL(settings.email.smtp_host, settings.email.smtp_port, context=context) as server:
+                logger.debug("Logging in to SMTP server as %s", settings.email.smtp_username)
                 server.login(settings.email.smtp_username, settings.email.smtp_password)
+                logger.debug("Sending email message")
                 server.send_message(message)
         else:
             with smtplib.SMTP(settings.email.smtp_host, settings.email.smtp_port) as server:
+                logger.debug("Starting TLS")
                 server.starttls(context=context)
+                logger.debug("Logging in to SMTP server as %s", settings.email.smtp_username)
                 server.login(settings.email.smtp_username, settings.email.smtp_password)
+                logger.debug("Sending email message")
                 server.send_message(message)
     except Exception as exc:  # pragma: no cover - network interaction
-        logger.exception("Failed to send email: %s", exc)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to send email") from exc
+        logger.exception(
+            "Failed to send email to %s via %s:%d - Error: %s",
+            payload.to,
+            settings.email.smtp_host,
+            settings.email.smtp_port,
+            exc,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to send email: {str(exc)}",
+        ) from exc
 
     message_id = make_msgid(domain=settings.email.smtp_host)
-    logger.info("Email sent successfully to %s", payload.to)
+    logger.info("Email sent successfully to %s with message_id %s", payload.to, message_id)
     return EmailResponse(status="sent", message_id=message_id)

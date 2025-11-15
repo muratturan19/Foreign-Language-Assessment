@@ -13,11 +13,6 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-try:  # pragma: no cover - optional dependency
-    import imageio_ffmpeg  # type: ignore
-except ModuleNotFoundError:  # pragma: no cover - handled at runtime
-    imageio_ffmpeg = None  # type: ignore[assignment]
-
 from ..models import SessionAudioUploadRequest
 from .session_store import get_store
 
@@ -76,18 +71,11 @@ def _ensure_mp3(audio_bytes: bytes, mime_type: Optional[str]) -> bytes:
     if mime_type and any(keyword in mime_type.lower() for keyword in ("mpeg", "mp3")):
         return audio_bytes
 
-    ffmpeg_path: Optional[str] = None
-    if imageio_ffmpeg is not None:
-        try:
-            ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
-        except Exception as exc:  # pragma: no cover - network download/availability
-            logger.warning("imageio-ffmpeg failed to provide an ffmpeg binary: %s", exc)
-
-    if ffmpeg_path is None:
-        ffmpeg_path = shutil.which("ffmpeg")
+    # Try to find ffmpeg binary in system PATH
+    ffmpeg_path = shutil.which("ffmpeg")
 
     if not ffmpeg_path:
-        logger.error("FFmpeg executable is not available. Install imageio-ffmpeg or add ffmpeg to PATH.")
+        logger.error("FFmpeg executable is not available. Please install ffmpeg and add it to PATH.")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Audio conversion service is unavailable",

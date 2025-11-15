@@ -207,7 +207,12 @@ def _load_trusted_origins() -> tuple[str, ...]:
 
 @lru_cache(maxsize=1)
 def get_settings() -> AppSettings:
-    return AppSettings.from_env()
+    import logging
+    logger = logging.getLogger(__name__)
+    settings = AppSettings.from_env()
+    logger.info(f"[Config] Settings loaded - TARGET_EMAIL: {settings.target_email}")
+    logger.info(f"[Config] SMTP configured: {settings.email.is_configured}")
+    return settings
 
 
 def set_gpt5_api_key(api_key: str) -> AppSettings:

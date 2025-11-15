@@ -307,6 +307,8 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
 @app.get("/api/config/email", response_model=EmailConfigStatus, tags=["config"])
 def email_status(_: str = Depends(get_current_token)) -> EmailConfigStatus:
     settings_snapshot = get_settings()
+    logger.info(f"[Email Config] Current TARGET_EMAIL: {settings_snapshot.target_email}")
+    logger.info(f"[Email Config] Email configured: {settings_snapshot.email.is_configured}")
     missing = settings_snapshot.email.missing_fields()
     public_settings = EmailSettingsPublic(
         provider=settings_snapshot.email.provider,

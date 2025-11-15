@@ -200,34 +200,45 @@ export function ChatPanel() {
 
   useEffect(() => {
     if (!session?.session_id) {
+      console.log("[Audio] No active session, skipping audio recording setup");
       return;
     }
 
+    console.log("[Audio] Setting up audio recording for session:", session.session_id);
     let cancelled = false;
 
     const startRecording = async () => {
       if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        console.error("[Audio] Browser does not support audio recording");
         setAudioError("Bu tarayıcıda ses kaydı desteklenmiyor.");
         return;
       }
 
+      console.log("[Audio] Requesting microphone access...");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("[Audio] Microphone access granted");
+
         if (cancelled) {
+          console.log("[Audio] Recording cancelled before start, stopping stream");
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
 
         const preferredMimeType = getPreferredAudioMimeType();
+        console.log("[Audio] Preferred MIME type:", preferredMimeType || "default");
+
         let recorder: MediaRecorder | null = null;
         try {
           recorder = preferredMimeType
             ? new MediaRecorder(stream, { mimeType: preferredMimeType })
             : new MediaRecorder(stream);
         } catch (error) {
-          console.warn("Falling back to default MediaRecorder configuration", error);
+          console.warn("[Audio] Falling back to default MediaRecorder configuration", error);
           recorder = new MediaRecorder(stream);
         }
+
+        console.log("[Audio] MediaRecorder created with MIME type:", recorder.mimeType);
 
         mediaRecorderRef.current = recorder;
         audioStreamRef.current = stream;
@@ -240,18 +251,21 @@ export function ChatPanel() {
 
         recorder.ondataavailable = (event: BlobEvent) => {
           if (event.data && event.data.size > 0) {
+            console.log("[Audio] Data chunk received, size:", event.data.size, "bytes");
             audioChunksRef.current.push(event.data);
           }
         };
         recorder.onerror = (event) => {
-          console.error("Audio recorder error", event);
+          console.error("[Audio] MediaRecorder error", event);
           setAudioError("Ses kaydı sırasında bir hata oluştu.");
         };
         recorder.onstop = () => {
+          console.log("[Audio] MediaRecorder stopped");
           setIsAudioRecording(false);
           const effectiveMime =
             preferredMimeType || recorder.mimeType || audioChunksRef.current[0]?.type || "audio/webm";
           const blob = new Blob(audioChunksRef.current, { type: effectiveMime });
+          console.log("[Audio] Audio blob created, size:", blob.size, "bytes, type:", effectiveMime);
           setAudioBlob(blob);
           setAudioMimeType(effectiveMime);
           audioChunksRef.current = [];
@@ -266,8 +280,9 @@ export function ChatPanel() {
         };
 
         recorder.start();
+        console.log("[Audio] Recording started");
       } catch (error) {
-        console.error("Failed to start audio recording", error);
+        console.error("[Audio] Failed to start audio recording", error);
         setAudioError("Mikrofon erişimi alınamadı veya MediaRecorder desteklenmiyor.");
       }
     };
@@ -275,12 +290,13 @@ export function ChatPanel() {
     startRecording();
 
     return () => {
+      console.log("[Audio] Cleaning up audio recording");
       cancelled = true;
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         try {
           mediaRecorderRef.current.stop();
         } catch (error) {
-          console.error("Failed to stop audio recorder during cleanup", error);
+          console.error("[Audio] Failed to stop audio recorder during cleanup", error);
         }
       }
       if (audioStreamRef.current) {
@@ -628,7 +644,13 @@ export function ChatPanel() {
     setAudioUploadInfo(null);
 
     try {
+      console.log("[Finish] Stopping audio capture...");
       await stopAudioCapture();
+      console.log("[Finish] Audio capture stopped");
+
+      // Wait a bit for the audioBlob state to update after onstop is called
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const summary = await finishSession.mutateAsync({ session_id: sessionId });
       setSessionSummary(summary);
 
@@ -656,27 +678,36 @@ export function ChatPanel() {
       const report = await generateReport.mutateAsync({ evaluation: evaluationResult, session_metadata: metadata });
       setReportUrl(report.report_url);
 
+      // Get the latest audioBlob state value using a ref or closure
+      const currentAudioBlob = audioBlob;
+      console.log("[Finish] Current audio blob:", currentAudioBlob ? `${currentAudioBlob.size} bytes` : "null");
+
       if (sessionId) {
-        if (audioBlob) {
+        if (currentAudioBlob && currentAudioBlob.size > 0) {
+          console.log("[Finish] Uploading audio blob to server...");
           try {
-            const encoded = await encodeBlobToBase64(audioBlob);
+            const encoded = await encodeBlobToBase64(currentAudioBlob);
+            console.log("[Finish] Audio blob encoded to base64, length:", encoded.length);
             const audioResult = await uploadSessionAudio.mutateAsync({
               session_id: sessionId,
               audio_base64: encoded,
-              mime_type: audioMimeType ?? audioBlob.type,
+              mime_type: audioMimeType ?? currentAudioBlob.type,
               report_date: metadata.report_generated_at,
             });
+            console.log("[Finish] Audio upload successful:", audioResult.filename);
             setAudioUploadInfo(`Ses kaydı kaydedildi: ${audioResult.filename}`);
           } catch (error) {
-            console.error("Failed to upload session audio", error);
+            console.error("[Finish] Failed to upload session audio", error);
             setAudioUploadInfo("Ses kaydı kaydedilemedi.");
           }
         } else {
+          console.warn("[Finish] No audio blob available to upload");
           setAudioUploadInfo("Ses kaydı yakalanamadı.");
         }
       }
 
       if (!participantInfo.shareReportConsent) {
+        console.log("[Email] Participant did not consent to share report");
         setEmailFeedback({
           type: "warning",
           message: "Katılımcı raporun e-posta ile paylaşılmasına izin vermediği için e-posta gönderilmedi.",
@@ -688,7 +719,12 @@ export function ChatPanel() {
       const fallbackRecipient = participantInfo.email.trim();
       const recipientEmail = configuredRecipient || fallbackRecipient;
 
+      console.log("[Email] Configured recipient from server:", configuredRecipient || "none");
+      console.log("[Email] Fallback recipient (participant):", fallbackRecipient);
+      console.log("[Email] Final recipient email:", recipientEmail);
+
       if (!recipientEmail) {
+        console.error("[Email] No recipient email available");
         setEmailFeedback({
           type: "error",
           message: "Geçerli bir alıcı e-posta adresi bulunamadı.",
@@ -697,6 +733,7 @@ export function ChatPanel() {
       }
 
       if (!emailStatusQuery.data?.configured) {
+        console.warn("[Email] Email settings not configured");
         setEmailFeedback({
           type: "warning",
           message: "E-posta ayarları yapılandırılmadığı için rapor gönderilemedi.",
@@ -720,8 +757,9 @@ export function ChatPanel() {
           content_type: "text/html",
           data: encodedReport,
         });
+        console.log("[Email] Report attachment prepared:", reportFilename);
       } catch (error) {
-        console.error("Failed to prepare report attachment", error);
+        console.error("[Email] Failed to prepare report attachment", error);
         setEmailFeedback({
           type: "error",
           message: "Rapor e-posta eki hazırlanırken bir hata oluştu.",
@@ -737,6 +775,10 @@ export function ChatPanel() {
       const subject = `${participant.full_name}- Assessment`;
       const body = `Merhaba, Yapay Zeka Destekli Yabancı Dil değerlendirme raporu ${participant.full_name} (${participant.email}) tarafından oluşturulan değerlendirmeye aittir. Detaylı rapora ekteki dosyalardan ulaşabilirsiniz.`;
 
+      console.log("[Email] Sending email to:", recipientEmail);
+      console.log("[Email] Subject:", subject);
+      console.log("[Email] Attachments count:", reportAttachments.length);
+
       try {
         await sendEmail.mutateAsync({
           to: recipientEmail,
@@ -745,12 +787,13 @@ export function ChatPanel() {
           session_id: sessionId,
           attachments: reportAttachments,
         });
+        console.log("[Email] Email sent successfully to:", recipientEmail);
         setEmailFeedback({
           type: "success",
           message: `Mail ${recipientEmail} adresine başarıyla gönderildi.`,
         });
       } catch (error) {
-        console.error("Failed to send report email", error);
+        console.error("[Email] Failed to send report email", error);
         setEmailFeedback({
           type: "error",
           message: "Rapor e-posta ile gönderilemedi. Lütfen e-posta ayarlarını kontrol edin.",

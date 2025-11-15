@@ -19,9 +19,10 @@ Render Dashboard → Environment sekmesinde şu değişkenleri ekleyin:
 
 ```bash
 APP_SECRET_TOKEN=<Generate Value butonunu kullanın>
-APP_BASE_URL=https://your-app-name.onrender.com
 TARGET_EMAIL=your-email@example.com
 ```
+
+**ÖNEMLİ:** `APP_BASE_URL` manuel ayarlama gerekmez! Render otomatik olarak `RENDER_EXTERNAL_URL` sağlar.
 
 #### Email (Gmail Örneği)
 
@@ -46,9 +47,10 @@ GPT5_MODEL=gpt-4
 #### Frontend Variables
 
 ```bash
-VITE_API_BASE_URL=https://your-app-name.onrender.com
 VITE_APP_SECRET_TOKEN=<APP_SECRET_TOKEN ile aynı değer>
 ```
+
+**NOT:** `VITE_API_BASE_URL` otomatik olarak build sırasında `RENDER_EXTERNAL_URL`'den ayarlanır.
 
 ### 3. Disk Ekleyin (Önemli!)
 
@@ -93,7 +95,7 @@ Tüm detaylar için: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)
 | "FFmpeg not found" | Build command'de FFmpeg kurulumu var mı kontrol edin |
 | Email gönderilmiyor | Gmail için App Password kullanın |
 | Audio dosyası yok | Persistent disk ekleyin |
-| Frontend yüklenmiyor | VITE_API_BASE_URL doğru mu kontrol edin |
+| Frontend yüklenmiyor | Logs'ta build hatası var mı kontrol edin |
 
 ## 🌟 Üretim İçin Checklist
 
@@ -101,9 +103,9 @@ Tüm detaylar için: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)
 - [ ] Persistent disk eklendi
 - [ ] Email ayarları test edildi
 - [ ] GPT API key eklendi
-- [ ] APP_SECRET_TOKEN güçlü bir değer
-- [ ] APP_BASE_URL doğru domain
+- [ ] APP_SECRET_TOKEN güçlü bir değer (en az 32 karakter)
 - [ ] Health check çalışıyor
+- [ ] Özel domain kullanıyorsanız APP_BASE_URL ayarlı
 
 ---
 

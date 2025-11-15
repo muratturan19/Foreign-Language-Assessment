@@ -112,7 +112,7 @@ class AppSettings(BaseModel):
     def from_env() -> "AppSettings":
         return AppSettings(
             target_email=os.getenv("TARGET_EMAIL"),
-            app_base_url=os.getenv("APP_BASE_URL", "http://localhost:8000"),
+            app_base_url=_load_app_base_url(),
             store_transcripts=os.getenv("STORE_TRANSCRIPTS", "true").lower() == "true",
             secret_token=_load_secret_token(),
             report_language=os.getenv("REPORT_LANGUAGE", "en"),
@@ -131,6 +131,29 @@ class AppSettings(BaseModel):
             gpt5_model=os.getenv("GPT5_MODEL", "gpt-5"),
             gpt5_temperature=_load_temperature(),
         )
+
+
+def _load_app_base_url() -> str:
+    """
+    Load the application base URL with automatic Render deployment support.
+
+    Priority:
+    1. APP_BASE_URL (if explicitly set)
+    2. RENDER_EXTERNAL_URL (automatically set by Render)
+    3. http://localhost:8000 (local development fallback)
+    """
+    # Check if explicitly configured
+    app_url = os.getenv("APP_BASE_URL")
+    if app_url and app_url.strip():
+        return app_url.strip()
+
+    # Use Render's auto-generated URL (available in Render deployments)
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+    if render_url and render_url.strip():
+        return render_url.strip()
+
+    # Fallback to local development
+    return "http://localhost:8000"
 
 
 def _load_secret_token() -> str:
@@ -159,12 +182,27 @@ def _load_temperature() -> float | None:
 
 
 def _load_trusted_origins() -> tuple[str, ...]:
-    raw = os.getenv("APP_TRUSTED_ORIGINS")
-    if raw is None or raw.strip() == "":
-        return DEFAULT_TRUSTED_ORIGINS
+    """
+    Load trusted CORS origins with automatic Render deployment support.
 
-    origins = tuple(origin.strip() for origin in raw.split(",") if origin.strip())
-    return origins or DEFAULT_TRUSTED_ORIGINS
+    Automatically includes RENDER_EXTERNAL_URL if present (for Render deployments).
+    """
+    raw = os.getenv("APP_TRUSTED_ORIGINS")
+
+    # Start with explicitly configured origins or defaults
+    if raw and raw.strip():
+        origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    else:
+        origins = list(DEFAULT_TRUSTED_ORIGINS)
+
+    # Add Render's external URL if available and not already included
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+    if render_url and render_url.strip():
+        render_url = render_url.strip()
+        if render_url not in origins:
+            origins.append(render_url)
+
+    return tuple(origins) if origins else DEFAULT_TRUSTED_ORIGINS
 
 
 @lru_cache(maxsize=1)

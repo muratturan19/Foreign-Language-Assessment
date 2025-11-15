@@ -54,7 +54,7 @@ app.add_middleware(
     allow_origins=list(settings.trusted_origins),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["*"],
 )
 
 def _resolve_frontend_dist() -> Path | None:

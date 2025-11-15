@@ -140,3 +140,21 @@ def test_cors_disallows_untrusted_origin():
     )
     assert allowed_response.status_code == 200
     assert allowed_response.headers.get("access-control-allow-origin") == allowed_origin
+
+
+def test_cors_allows_custom_headers():
+    client = TestClient(app)
+    allowed_origin = get_settings().trusted_origins[0]
+
+    response = client.options(
+        "/api/config/email",
+        headers={
+            "Origin": allowed_origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "X-Custom-Header",
+        },
+    )
+
+    assert response.status_code == 200
+    allowed_headers = response.headers.get("access-control-allow-headers", "")
+    assert "X-Custom-Header" in allowed_headers or allowed_headers == "*"

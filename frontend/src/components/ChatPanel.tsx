@@ -19,7 +19,6 @@ import { ScoreCard } from "./ScoreCard";
 import type {
   DualEvaluationResponse,
   EmailConfigUpdatePayload,
-  EmailAttachmentPayload,
   InteractionMode,
   SessionFinishResponse
 } from "../types";
@@ -51,16 +50,6 @@ const SAMPLE_RESPONSES = [
   "A recent challenge involved migrating part of our infrastructure without disrupting users. I designed a phased rollout, wrote automation scripts to validate data integrity, and coordinated with support teams. The migration completed smoothly and reduced latency by nearly 20 percent.",
   "My long-term goal is to keep growing as a product-minded engineer. That means staying close to user feedback, experimenting with new technologies, and sharing knowledge through talks or documentation so the entire team levels up together.",
 ] as const;
-
-function encodeStringToBase64(value: string): string {
-  const encoder = new TextEncoder();
-  const bytes = encoder.encode(value);
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
 
 export function ChatPanel() {
   const { data: transcript } = useTranscript();
@@ -785,7 +774,6 @@ export function ChatPanel() {
           subject,
           body,
           session_id: sessionId,
-          attachments: reportAttachments,
         });
         console.log("[Email] Email sent successfully to:", recipientEmail);
         setEmailFeedback({
@@ -952,7 +940,7 @@ export function ChatPanel() {
               <div className="mt-5 space-y-3 rounded-2xl border border-cyan-300/50 bg-cyan-50/70 p-4 text-left dark:border-cyan-500/20 dark:bg-slate-900/60">
                 <h3 className="text-base font-semibold text-cyan-700 dark:text-cyan-200">Aydınlatma Metni</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Bu uygulama, yabancı dil yeterliliğinizi değerlendirmek amacıyla sesli yanıtlarınızı işler. Paylaştığınız bilgiler sadece değerlendirme süreci boyunca saklanır, üçüncü kişilerle paylaşılmaz ve dilediğiniz zaman silinebilir. Dil değerlendirme raporlarınız selintumer@gmail.com adresine iletilir.
+                  Bu uygulama, yabancı dil yeterliliğinizi değerlendirmek amacıyla sesli yanıtlarınızı işler. Paylaştığınız bilgiler sadece değerlendirme süreci boyunca saklanır, üçüncü kişilerle paylaşılmaz ve dilediğiniz zaman silinebilir. Dil değerlendirme raporlarınız belirlenen e-posta adresine iletilir.
                 </p>
                 <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
                   <li>Kimlik ve iletişim bilgileriniz seans raporlarını oluşturmak ve size geri bildirim iletmek için kullanılır.</li>

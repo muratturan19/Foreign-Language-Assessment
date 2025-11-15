@@ -122,7 +122,9 @@ def chat(payload: ChatRequest, _: str = Depends(get_current_token)) -> ChatRespo
 
 @app.post("/api/session/audio", response_model=SessionAudioUploadResponse, tags=["session"])
 def upload_session_audio(payload: SessionAudioUploadRequest, _: str = Depends(get_current_token)) -> SessionAudioUploadResponse:
+    logger.info("Uploading audio for session %s", payload.session_id)
     filename, stored_path = store_session_audio(payload)
+    logger.info("Audio successfully uploaded and stored at %s for session %s", stored_path, payload.session_id)
     return SessionAudioUploadResponse(
         filename=filename,
         stored_path=str(stored_path),
@@ -222,21 +224,43 @@ def send_report_email(payload: EmailRequest, _: str = Depends(get_current_token)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found") from exc
 
         audio_path = getattr(session, "audio_recording_path", None)
-        if audio_path and Path(audio_path).exists():
-            already_attached = {attachment.filename for attachment in attachments}
-            if audio_path.name not in already_attached:
-                try:
-                    audio_bytes = Path(audio_path).read_bytes()
-                    encoded = base64.b64encode(audio_bytes).decode("ascii")
-                    attachments.append(
-                        EmailAttachment(
-                            filename=audio_path.name,
-                            content_type="audio/mpeg",
-                            data=encoded,
-                        )
+        if audio_path:
+            logger.info("Audio recording path found for session %s: %s", session.session_id, audio_path)
+            if Path(audio_path).exists():
+                already_attached = {attachment.filename for attachment in attachments}
+                audio_filename = Path(audio_path).name
+                if audio_filename in already_attached:
+                    logger.info(
+                        "Audio recording %s already attached for session %s",
+                        audio_filename,
+                        session.session_id,
                     )
-                except OSError as exc:  # pragma: no cover - filesystem error
-                    logger.warning("Unable to attach audio recording for session %s: %s", session.session_id, exc)
+                else:
+                    try:
+                        audio_bytes = Path(audio_path).read_bytes()
+                        encoded = base64.b64encode(audio_bytes).decode("ascii")
+                        attachments.append(
+                            EmailAttachment(
+                                filename=audio_filename,
+                                content_type="audio/mpeg",
+                                data=encoded,
+                            )
+                        )
+                        logger.info(
+                            "Attached audio recording %s for session %s",
+                            audio_filename,
+                            session.session_id,
+                        )
+                    except OSError as exc:  # pragma: no cover - filesystem error
+                        logger.warning("Unable to attach audio recording for session %s: %s", session.session_id, exc)
+            else:
+                logger.warning(
+                    "Audio recording path does not exist for session %s: %s",
+                    session.session_id,
+                    audio_path,
+                )
+        else:
+            logger.info("No audio recording path found for session %s", session.session_id)
 
         report_record = get_latest_report_for_session(payload.session_id)
         if report_record and report_record.path.exists():

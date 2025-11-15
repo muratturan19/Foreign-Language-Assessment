@@ -23,7 +23,6 @@ import type {
   SessionFinishResponse
 } from "../types";
 import { isClosingMessageContent } from "../utils/messages";
-import { encodeStringToBase64 } from "../utils/encoding";
 
 type EmailFeedbackState = {
   type: "success" | "error" | "warning" | "info";
@@ -733,49 +732,7 @@ export function ChatPanel() {
 
       setEmailFeedback({
         type: "info",
-        message: "Rapor başarıyla oluşturuldu. Mail hazırlanıyor...",
-      });
-
-      const reportAttachments: EmailAttachmentPayload[] = [];
-      try {
-        const reportFilename = evaluationResult.session.id
-          ? `assessment_report_${evaluationResult.session.id}.html`
-          : "assessment_report.html";
-
-        console.log("[Email] Preparing report attachment:", reportFilename);
-        console.log("[Email] Report HTML length:", report.html?.length || 0);
-
-        if (!report.html || report.html.trim().length === 0) {
-          throw new Error("Report HTML is empty or undefined");
-        }
-
-        const encodedReport = encodeStringToBase64(report.html);
-        console.log("[Email] Report encoded successfully, length:", encodedReport.length);
-
-        reportAttachments.push({
-          filename: reportFilename,
-          content_type: "text/html",
-          data: encodedReport,
-        });
-        console.log("[Email] Report attachment prepared successfully:", reportFilename);
-      } catch (error) {
-        console.error("[Email] Failed to prepare report attachment:", error);
-        console.error("[Email] Error details:", {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          reportHtmlAvailable: !!report?.html,
-          reportHtmlLength: report?.html?.length || 0,
-        });
-        setEmailFeedback({
-          type: "error",
-          message: `Rapor e-posta eki hazırlanırken bir hata oluştu: ${error instanceof Error ? error.message : String(error)}`,
-        });
-        return;
-      }
-
-      setEmailFeedback({
-        type: "info",
-        message: "Mail gönderiliyor...",
+        message: "Rapor başarıyla oluşturuldu. Mail gönderiliyor...",
       });
 
       const subject = `${participant.full_name}- Assessment`;
@@ -783,7 +740,7 @@ export function ChatPanel() {
 
       console.log("[Email] Sending email to:", recipientEmail);
       console.log("[Email] Subject:", subject);
-      console.log("[Email] Attachments count:", reportAttachments.length);
+      console.log("[Email] Session ID:", sessionId);
 
       try {
         await sendEmail.mutateAsync({

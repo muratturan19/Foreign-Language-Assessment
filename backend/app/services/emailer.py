@@ -33,9 +33,12 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
         message.add_alternative(html_body, subtype="html")
 
     if payload.attachments:
+        print(f"\n[EMAILER] Building email with {len(payload.attachments)} attachment(s)")
         logger.info("Building email with %d attachment(s)", len(payload.attachments))
         for idx, attachment in enumerate(payload.attachments):
             try:
+                print(f"[EMAILER] Processing attachment {idx+1}/{len(payload.attachments)}: {attachment.filename}")
+                print(f"[EMAILER]   Type: {attachment.content_type}, Encoded size: {len(attachment.data)} bytes")
                 logger.debug(
                     "Processing attachment %d/%d: %s (type: %s, encoded size: %d bytes)",
                     idx + 1,
@@ -45,6 +48,7 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
                     len(attachment.data),
                 )
                 file_bytes = base64.b64decode(attachment.data, validate=True)
+                print(f"[EMAILER] Attachment {attachment.filename} decoded successfully, size: {len(file_bytes)} bytes")
                 logger.debug(
                     "Attachment %s decoded successfully, size: %d bytes",
                     attachment.filename,
@@ -74,6 +78,7 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
                 subtype=subtype,
                 filename=attachment.filename,
             )
+            print(f"[EMAILER] ✅ Attachment {attachment.filename} added successfully ({maintype}/{subtype}, {len(file_bytes)} bytes)")
             logger.info(
                 "Attachment %s added successfully (%s/%s, %d bytes)",
                 attachment.filename,

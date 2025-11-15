@@ -1,6 +1,14 @@
 # Render deployment environment variables
+#
+# IMPORTANT: Render automatically provides RENDER_EXTERNAL_URL
+# You do NOT need to manually set APP_BASE_URL or VITE_API_BASE_URL!
+# The application will automatically use RENDER_EXTERNAL_URL during deployment.
+#
+# To use a custom domain instead of Render's auto-generated URL,
+# uncomment and set APP_BASE_URL below:
+# APP_BASE_URL=https://your-custom-domain.com
+
 APP_SECRET_TOKEN=change-me-secret
-APP_BASE_URL=https://your-app.onrender.com
 TARGET_EMAIL=demo@example.com
 REPORT_LANGUAGE=en
 STORE_TRANSCRIPTS=true
@@ -22,6 +30,7 @@ GPT5_API_BASE_URL=https://api.openai.com/v1
 GPT5_MODEL=gpt-4
 GPT5_TEMPERATURE=0.3
 
-# Frontend build variables (must match backend values)
-VITE_API_BASE_URL=https://your-app.onrender.com
+# Frontend build variables
+# Note: VITE_API_BASE_URL is automatically set during build from RENDER_EXTERNAL_URL
+# You only need to set VITE_APP_SECRET_TOKEN (must match APP_SECRET_TOKEN above)
 VITE_APP_SECRET_TOKEN=change-me-secret

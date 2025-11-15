@@ -71,8 +71,11 @@ Render Dashboard'da Environment sekmesine gidin ve aşağıdaki değişkenleri e
 | Variable | Açıklama | Örnek Değer |
 |----------|----------|-------------|
 | `APP_SECRET_TOKEN` | API kimlik doğrulama token'ı | Render'ın "Generate Value" özelliğini kullanın |
-| `APP_BASE_URL` | Uygulamanızın URL'i | `https://foreign-language-assessment.onrender.com` |
 | `TARGET_EMAIL` | Varsayılan rapor alıcı email'i | `your-email@example.com` |
+
+**ÖNEMLİ NOT:** `APP_BASE_URL` ve `VITE_API_BASE_URL` manuel olarak ayarlamanıza gerek YOK!
+Render otomatik olarak `RENDER_EXTERNAL_URL` environment variable'ını sağlar ve uygulama bunu kullanır.
+Sadece özel domain kullanıyorsanız `APP_BASE_URL` değişkenini manuel olarak ekleyin.
 
 #### Email Konfigürasyonu (Seçeneklerden birini seçin)
 
@@ -123,8 +126,10 @@ Frontend build sırasında kullanılır:
 
 | Variable | Açıklama | Örnek Değer |
 |----------|----------|-------------|
-| `VITE_API_BASE_URL` | Backend API URL'i | `https://foreign-language-assessment.onrender.com` |
 | `VITE_APP_SECRET_TOKEN` | Frontend'in kullanacağı token | `APP_SECRET_TOKEN` ile aynı değer |
+
+**NOT:** `VITE_API_BASE_URL` otomatik olarak `RENDER_EXTERNAL_URL`'den ayarlanır (render.yaml'de).
+Manuel ayarlama gerekmez.
 
 ### 5. Disk Storage Ayarlama
 
@@ -286,9 +291,15 @@ npm run build --prefix frontend
 
 ### CORS Hatası
 
-**Çözüm**: `VITE_API_BASE_URL` environment variable'ını doğru ayarlayın:
+**Çözüm**: CORS ayarları otomatik olarak yapılandırılmıştır.
+- Backend `RENDER_EXTERNAL_URL`'yi otomatik olarak trusted origins'e ekler
+- Frontend build `RENDER_EXTERNAL_URL`'yi kullanır
+- Özel domain kullanıyorsanız `APP_BASE_URL` ve `APP_TRUSTED_ORIGINS` değişkenlerini ayarlayın
+
+Örnek (özel domain için):
 ```bash
-VITE_API_BASE_URL=https://your-app.onrender.com
+APP_BASE_URL=https://your-custom-domain.com
+APP_TRUSTED_ORIGINS=https://your-custom-domain.com
 ```
 
 ## Güncelleme ve Yeniden Deployment

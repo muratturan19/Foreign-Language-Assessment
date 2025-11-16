@@ -7,9 +7,63 @@ Tamamlanmış bu proje, TOEFL-benzeri kriterlere göre konuşma değerlendirmesi
 
 Ayrıntılı gereksinimler için [docs/SPEC.md](docs/SPEC.md) belgesine bakabilirsiniz.
 
+## Sistem Gereksinimleri
+
+Bu uygulama ses dosyası işleme için **FFmpeg** gerektirir. Lütfen uygulamayı çalıştırmadan önce FFmpeg'i sisteminize kurun.
+
+### FFmpeg Kurulumu
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install -y ffmpeg
+```
+
+**macOS (Homebrew):**
+```bash
+brew install ffmpeg
+```
+
+**Windows (Chocolatey):**
+```bash
+choco install ffmpeg
+```
+
+**Windows (Manual):**
+1. [ffmpeg.org](https://ffmpeg.org/download.html) adresinden Windows binary indirin
+2. ZIP dosyasını çıkarın (örn: `C:\ffmpeg`)
+3. `C:\ffmpeg\bin` klasörünü PATH environment variable'ına ekleyin
+
+**Kurulumu Doğrulama:**
+```bash
+ffmpeg -version
+```
+
+Bu komut FFmpeg versiyonunu göstermelidir. Eğer "command not found" hatası alırsanız, FFmpeg PATH'e düzgün eklenmemiştir.
+
+**Not:** Render deployment'ında FFmpeg otomatik olarak kurulur, sadece local development için manuel kurulum gereklidir.
+
 ## Hızlı Başlangıç
 
-### 1. Ortamı Hazırlayın
+### Otomatik Kurulum (Önerilen)
+
+Local development için tüm gereksinimleri otomatik olarak kontrol eden ve kuran bir setup scripti sağlanmıştır:
+
+```bash
+./setup-local.sh
+```
+
+Bu script:
+- FFmpeg kurulumunu kontrol eder
+- Python ve Node.js kurulumunu doğrular
+- `.env` dosyalarını oluşturur
+- Backend ve frontend bağımlılıklarını yükler
+
+### Manuel Kurulum
+
+Eğer otomatik kurulum yerine manuel kurulum yapmak isterseniz:
+
+#### 1. Ortamı Hazırlayın
 
 ```
 cp .env.example .env
@@ -35,7 +89,7 @@ openssl rand -base64 32
 
 Üretilen token'ı hem `.env` hem de `frontend/.env` dosyalarına ekleyin.
 
-### 2. Backend'i Çalıştırın
+#### 2. Backend'i Çalıştırın
 
 ```bash
 cd backend
@@ -47,7 +101,7 @@ uvicorn app.main:app --reload
 
 API varsayılan olarak `http://localhost:8000` adresinde ayağa kalkar. Sağlık kontrolü için `/health` uç noktasını kullanabilirsiniz.
 
-### 3. Frontend'i Çalıştırın
+#### 3. Frontend'i Çalıştırın
 
 ```bash
 cd frontend

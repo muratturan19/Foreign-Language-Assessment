@@ -76,9 +76,13 @@ def _ensure_mp3(audio_bytes: bytes, mime_type: Optional[str]) -> bytes:
 
     if not ffmpeg_path:
         logger.error("FFmpeg executable is not available. Please install ffmpeg and add it to PATH.")
+        error_msg = (
+            "Audio conversion service is unavailable. FFmpeg is required for audio processing. "
+            "Please install FFmpeg: https://ffmpeg.org/download.html or run './setup-local.sh' for local development."
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Audio conversion service is unavailable",
+            detail=error_msg,
         )
 
     suffix = _extension_from_mime(mime_type)

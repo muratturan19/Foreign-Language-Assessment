@@ -346,6 +346,9 @@ export function ChatPanel() {
   const shouldResetOnStartRef = useRef(false);
   const restartTimeoutRef = useRef<number | null>(null);
   const activePromptIdRef = useRef<string | null>(null);
+  const [questionRecordingTimeLeft, setQuestionRecordingTimeLeft] = useState<number>(300); // 5 minutes
+  const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const questionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSend = useCallback(
     async (message: string) => {
@@ -459,6 +462,15 @@ export function ChatPanel() {
       if (restartTimeoutRef.current) {
         window.clearTimeout(restartTimeoutRef.current);
         restartTimeoutRef.current = null;
+      }
+      // Clear question timers
+      if (questionTimerRef.current) {
+        clearInterval(questionTimerRef.current);
+        questionTimerRef.current = null;
+      }
+      if (questionTimeoutRef.current) {
+        clearTimeout(questionTimeoutRef.current);
+        questionTimeoutRef.current = null;
       }
       if (recognitionRef.current) {
         try {
@@ -602,6 +614,17 @@ export function ChatPanel() {
           return;
         }
         manualStopRef.current = true;
+
+        // Clear question timers
+        if (questionTimerRef.current) {
+          clearInterval(questionTimerRef.current);
+          questionTimerRef.current = null;
+        }
+        if (questionTimeoutRef.current) {
+          clearTimeout(questionTimeoutRef.current);
+          questionTimeoutRef.current = null;
+        }
+
         try {
           recognitionRef.current.stop();
         } catch {
@@ -619,10 +642,49 @@ export function ChatPanel() {
       });
       manualStopRef.current = false;
       shouldResetOnStartRef.current = true;
+
+      // Start 5-minute countdown for this question
+      setQuestionRecordingTimeLeft(300);
+      questionTimerRef.current = setInterval(() => {
+        setQuestionRecordingTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (questionTimerRef.current) {
+              clearInterval(questionTimerRef.current);
+              questionTimerRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Auto-stop recording after 5 minutes
+      questionTimeoutRef.current = setTimeout(() => {
+        console.log("[Question Recording] 5-minute limit reached, stopping recording automatically");
+        if (recognitionRef.current && isRecording) {
+          manualStopRef.current = true;
+          try {
+            recognitionRef.current.stop();
+          } catch (error) {
+            console.error("[Question Recording] Failed to auto-stop recognition", error);
+            setIsRecording(false);
+          }
+        }
+      }, 300000); // 5 minutes
+
       try {
         recognitionRef.current.start();
       } catch {
         setIsRecording(false);
+        // Clear timers on error
+        if (questionTimerRef.current) {
+          clearInterval(questionTimerRef.current);
+          questionTimerRef.current = null;
+        }
+        if (questionTimeoutRef.current) {
+          clearTimeout(questionTimeoutRef.current);
+          questionTimeoutRef.current = null;
+        }
       }
     },
     [isRecording]
@@ -1371,6 +1433,18 @@ export function ChatPanel() {
                                 </button>
                               )}
                             </div>
+                            {isActive && (
+                              <div className="max-w-xl rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-slate-700 shadow dark:border-emerald-400/60 dark:bg-emerald-900/20 dark:text-slate-100">
+                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">
+                                  Kayıt devam ediyor - Kalan süre: {Math.floor(questionRecordingTimeLeft / 60)}:{(questionRecordingTimeLeft % 60).toString().padStart(2, '0')}
+                                </p>
+                                {questionRecordingTimeLeft <= 30 && questionRecordingTimeLeft > 0 && (
+                                  <p className="mt-1 text-amber-600 dark:text-amber-400 font-semibold">
+                                    ⚠️ Süre dolmak üzere! Cevabınızı tamamlayın.
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             {lastCaptured && !isClosingMessage && (
                               <div className="max-w-xl rounded-lg border border-blue-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 shadow dark:border-blue-400/60 dark:bg-slate-800/60 dark:text-slate-100">
                                 <p className="font-semibold text-blue-700 dark:text-blue-300">Son kaydedilen yanıt</p>

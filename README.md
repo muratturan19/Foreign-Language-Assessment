@@ -1,11 +1,26 @@
 # Foreign Language Assessment Platform
 
-Tamamlanmış bu proje, TOEFL-benzeri kriterlere göre konuşma değerlendirmesi yapan İngilizce mülakat koçu deneyimini uçtan uca sağlar. Uygulama iki ana bileşenden oluşur:
+Bu depo, TOEFL / iTEP / IELTS rubriklerini temel alan bir İngilizce konuşma değerlendirme koçunu uçtan uca sunar. Uygulama artık yalnızca bir fikir dokümanı değil; FastAPI tabanlı backend, React + Vite frontend, raporlama katmanı, ses yükleme ve e-posta paylaşımıyla çalışan bir prototip içerir. Ayrıntılı gereksinimler için [docs/SPEC.md](docs/SPEC.md) ve mimari notlar için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) dosyalarına bakabilirsiniz.
 
-- **Backend (FastAPI)** – Oturum yönetimi, değerlendirme motoru, rapor üretimi ve e-posta kuyruklama uçlarını sunar.
-- **Frontend (React + Vite)** – Metin tabanlı sohbet arayüzü, oturum kontrolü ve değerlendirme sonuçlarının görselleştirilmesini sağlar.
+## Mimari Özet
 
-Ayrıntılı gereksinimler için [docs/SPEC.md](docs/SPEC.md) belgesine bakabilirsiniz.
+- **Backend (FastAPI)**
+  - Oturum ve sohbet akışını yönetir, katılımcı onayını takip eder ve konuşma kayıtlarını saklar. (`backend/app/main.py`)
+  - Heuristik bir değerlendirme motoru, JSON tabanlı rubrik dosyalarını okuyarak TOEFL/iTEP/IELTS çıktıları üretir ve varsa GPT-5 API cevabıyla sonuçları birleştirir. (`backend/app/services/evaluation.py`)
+  - HTML raporu kalıcı olarak kaydeder, son raporu dosya sistemi üzerinden indirilebilir hale getirir ve e-posta gönderirken rapor + ses kaydını ek olarak iliştirir.
+- **Frontend (React + Vite)**
+  - Türkçe bir yönetim arayüzü üzerinden katılımcı bilgisi toplar, oturum başlatır ve interviewer rolünde otomatik konuşma akışını gösterir. (`frontend/src/components/ChatPanel.tsx`)
+  - Mikrofon izni alıp tarayıcıda kayıt yapar, görüşme sonunda backend'e base64 kodlu ses yükler ve değerlendirme çıktılarını kartlar halinde render eder.
+  - SMTP/GPT5 yapılandırmasını UI üzerinden güncelleme, rapor paylaşma ve e-posta gönderimini tetikleme bileşenleri içerir.
+
+## Öne Çıkan Özellikler
+
+- 🧭 **Çoklu standart değerlendirme** – TOEFL (0–4), iTEP (0–6) ve IELTS (0–9) kriterleri için skor, yorum, CEFR eşlemesi, yaygın hatalar ve aksiyon planları üretir. Gerektiğinde GPT-5 değerlendirmeleriyle otomatik birleştirilir.
+- 🧠 **CEFR uyumlu öneriler** – Transkript metriklerine göre common error tespiti, kanıt cümleleri ve CEFR seviyesine göre 5 maddelik aksiyon planı döndürür.
+- 🗂️ **JSON ile konfigüre edilebilir rubrikler** – Yeni standart eklemek `configs/<standard>/<version>.json` dosyası oluşturmakla sınırlıdır; uygulama kriterleri ve ağırlıkları bu dosyalardan okur.
+- 📨 **Raporlama ve e-posta** – HTML raporu disk üzerinde saklar, paylaşılabilir token üretir ve e-posta gönderiminde son rapor ile varsa ses kaydını otomatik ekler.
+- 🎙️ **Ses kaydı ve yükleme** – Frontend tarayıcı API'lerini kullanarak MP3/WebM kaydı alır, backend bu kaydı disk üzerinde saklar ve e-posta ekine dönüştürür.
+- 🔐 **Token tabanlı güvenlik** – Backend ve frontend aynı `APP_SECRET_TOKEN` değerini kullanır; tüm API çağrıları bu header ile doğrulanır.
 
 ## Sistem Gereksinimleri
 
@@ -45,96 +60,57 @@ Bu komut FFmpeg versiyonunu göstermelidir. Eğer "command not found" hatası al
 
 ## Hızlı Başlangıç
 
-### Otomatik Kurulum (Önerilen)
+### 1) Otomatik kurulum (önerilen)
 
-Local development için tüm gereksinimleri otomatik olarak kontrol eden ve kuran bir setup scripti sağlanmıştır:
+Local geliştirme ortamı için bağımlılıkları doğrulayan ve `.env` dosyalarını oluşturan script:
 
 ```bash
 ./setup-local.sh
 ```
 
-Bu script:
-- FFmpeg kurulumunu kontrol eder
-- Python ve Node.js kurulumunu doğrular
-- `.env` dosyalarını oluşturur
-- Backend ve frontend bağımlılıklarını yükler
+Script FFmpeg/Python/Node.js kontrolü yapar, `backend/.venv` sanal ortamını kurar, `npm install` çalıştırır ve `.env` dosyalarını örneklerden kopyalar.
 
-### Manuel Kurulum
+### 2) Manuel kurulum adımları
 
-Eğer otomatik kurulum yerine manuel kurulum yapmak isterseniz:
+1. Ortam değişkenleri:
+   ```bash
+   cp .env.example .env
+   cp frontend/.env.example frontend/.env
+   ```
+   - `APP_SECRET_TOKEN` (backend) ve `VITE_APP_SECRET_TOKEN` (frontend) değerleri **aynı** olmalıdır ve en az 32 karakterlik rastgele bir token olmalıdır.
+   - `.env` dosyasında SMTP veya SendGrid alanlarını doldurarak e-posta gönderimini etkinleştirebilirsiniz.
 
-#### 1. Ortamı Hazırlayın
+2. Backend'i başlatın:
+   ```bash
+   cd backend
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn app.main:app --reload
+   ```
 
-```
-cp .env.example .env
-cp frontend/.env.example frontend/.env
-```
+3. Frontend'i başlatın:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-`.env` dosyasında gizli anahtarları ve e-posta yapılandırmasını güncelleyin. `APP_SECRET_TOKEN` değeri artık zorunludur ve en az 32 karakterden oluşan güçlü bir anahtar olmalıdır; uygulama bu değişken tanımlanmadan veya varsayılan `dev-secret` değeri kullanılırsa başlatılamaz.
-
-**ÖNEMLİ:** Backend ve frontend aynı anahtarı paylaşmalıdır:
-- Backend: `.env` dosyasında `APP_SECRET_TOKEN`
-- Frontend: `frontend/.env` dosyasında `VITE_APP_SECRET_TOKEN`
-
-Her iki dosyadaki token değerleri **aynı** olmalıdır, aksi takdirde 401 Unauthorized hatası alırsınız.
-
-Güvenli bir token oluşturmak için aşağıdaki komutlardan birini kullanabilirsiniz:
-```bash
-# Python kullanarak
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-
-# veya OpenSSL kullanarak
-openssl rand -base64 32
-```
-
-Üretilen token'ı hem `.env` hem de `frontend/.env` dosyalarına ekleyin.
-
-#### 2. Backend'i Çalıştırın
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-API varsayılan olarak `http://localhost:8000` adresinde ayağa kalkar. Sağlık kontrolü için `/health` uç noktasını kullanabilirsiniz.
-
-#### 3. Frontend'i Çalıştırın
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Geliştirme sunucusu `http://localhost:5173` adresinde çalışır ve API isteklerini Vite proxy üzerinden backend'e yönlendirir.
+4. Tarayıcıda `http://localhost:5173` adresine gidin. İlk ekrandaki katılımcı formunu doldurduktan sonra sohbet başlar; görüşme sonunda değerlendirme, rapor ve e-posta adımları UI üzerinden tetiklenebilir.
 
 ## 🚀 Render'a Deploy Etme
 
-Bu uygulama Render platformunda kolayca deploy edilebilir. Tüm fonksiyonlar (email gönderme, ses dosyası işleme) çalışır.
+Proje Render üzerinde backend (FastAPI) + statik frontend olarak çalıştırılabilir. FFmpeg kurulumu `render.yaml` içinde otomatik yapılır.
 
-### Hızlı Başlangıç
+1. Repo'yu Render hesabınıza bağlayın ve `render.yaml` dosyasıyla blueprint deploy başlatın.
+2. `APP_SECRET_TOKEN`, `TARGET_EMAIL`, SMTP/SENDGRID alanları ve GPT API anahtarını Render ortam değişkenlerine ekleyin.
+3. Deploy sonrası `/health` endpoint'i üzerinden sağlık durumunu doğrulayın.
 
-1. Repository'yi Render'a bağlayın
-2. Environment variables'ları ekleyin (APP_SECRET_TOKEN, email ayarları, GPT API key)
-3. Deploy edin (otomatik FFmpeg kurulumu ve frontend build)
-
-**Detaylı rehber**: [RENDER_QUICKSTART.md](./RENDER_QUICKSTART.md)
-**Kapsamlı dokümantasyon**: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)
-
-### Özellikler
-
-- ✅ FFmpeg ile otomatik ses dosyası işleme
-- ✅ SMTP/SendGrid email entegrasyonu
-- ✅ Persistent disk ile audio/report saklama
-- ✅ Health check ve auto-deploy
-- ✅ React frontend static serving
+Detaylı yönergeler için [RENDER_QUICKSTART.md](./RENDER_QUICKSTART.md) ve [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) dokümanlarını inceleyin.
 
 ## Testler
 
-Backend testlerini çalıştırmak için depo kök dizinindeyken:
+Backend birim ve entegrasyon testleri `tests/` klasöründedir. Çalıştırmak için:
 
 ```bash
 python -m venv .venv
@@ -143,31 +119,25 @@ pip install -r backend/requirements.txt pytest
 pytest
 ```
 
-Test paketi, değerlendirme servisinin deterministik sonuçlar döndürdüğünü ve temel API akışının beklendiği gibi çalıştığını doğrular.
+Testler; değerlendirme heuristiklerinin deterministik kalmasını, GPT istemcisi hata yakalama senaryolarını ve FastAPI uç noktalarının temel akışlarını doğrular.
 
 ## Proje Yapısı
 
 ```
-backend/        # FastAPI uygulaması ve servis katmanı
-docs/           # Proje şartnamesi
-frontend/       # React + Vite istemcisi
-tests/          # Pytest tabanlı backend testleri
+backend/        # FastAPI uygulaması, servisler, model şemaları
+frontend/       # React + Vite istemcisi ve UI bileşenleri
+configs/        # TOEFL / iTEP / IELTS rubrik JSON dosyaları
+docs/           # Şartname, mimari ve akış dokümanları
+tests/          # Pytest senaryoları (API + değerlendirme)
 ```
 
-## Özellikler
+## Standart Bazlı Değerlendirme
 
-- TOEFL rubriğine göre 4 boyutlu (Delivery, Language Use, Topic Development, Task Fulfillment) değerlendirme
-- CEFR seviye eşlemesi ve kişiselleştirilmiş 30 günlük aksiyon planı
-- HTML raporu dosyaya kaydetme ve paylaşılabilir bağlantı üretme
-- Mock e-posta gönderimi (SMTP/SendGrid entegrasyonuna hazır arayüz)
-- React tabanlı sohbet arayüzü, oturum yönetimi ve değerlendirme sunumu
+- UI, görüşmeyi interviewer rol mesajlarıyla yürütür ve oturum tamamlandığında backend `configs/*` altında tutulan JSON rubriklerine göre skor üretir.
+- GPT-5 API anahtarı sağlandığında, gelen JSON çıktısı heuristik sonuçlarla birleştirilir; aksi halde yerleşik heuristikler tek başına kullanılır.
+- Yeni standart eklemek için ilgili dizine `configs/<standard>/<version>.json` dosyası koymak yeterlidir; kriter isimleri otomatik olarak UI'da gösterilir.
 
-## Standart Bazlı Değerlendirme Taslağı
-- Amaç: UI üzerinden değerlendirme standardı seçildiğinde ilgili JSON yüklenir; sohbet interviewer rolüyle ilerler, oturum bitince evaluator JSON'daki rubriğe göre puanlama yapar, CEFR eşlemesi ve HTML rapor hazırlanır, e-posta iletilir.
-- Mevcut aşama: Kod yok; yalnızca tasarım dokümantasyonu ve dummy JSON konfigürasyonları bulunur.
-- Gelecek faz: Frontend dropdown seçimleri backend'e ileterek ilgili JSON'u yükleyecek ve LLM'e aktaracak.
+## Ek Notlar
 
-## Notlar
-- JSON dosyaları placeholder içeriğe sahiptir; gerçek rubrik ve haritalama değerleri daha sonra doldurulacaktır.
-- Uygulama kodu geliştirilirken sabit metin kullanılmayacak; tüm rol mesajları, kriterler, ağırlıklar ve CEFR eşlemesi JSON üzerinden okunacaktır.
-- Yeni standart eklemek yalnızca `configs/<standard>/<version>.json` dosyası eklemeyi gerektirir.
+- JSON konfigürasyonları gerçekçi varsayılanlarla doldurulmuştur; skor ağırlıkları, CEFR eşlemeleri ve aksiyon planları bu dosyalardan okunur.
+- Uygulama sabit metin yerine config ve servis katmanlarından beslenir; böylece yeni senaryoları kod değişmeden deneyebilirsiniz.

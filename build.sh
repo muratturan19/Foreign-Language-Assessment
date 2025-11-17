@@ -17,7 +17,7 @@ pip install -r backend/requirements.txt
 
 echo "Installing frontend dependencies..."
 cd frontend
-npm ci --only=production
+npm ci
 
 echo "Building frontend..."
 npm run build

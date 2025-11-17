@@ -1,24 +1,12 @@
 services:
   - type: web
     name: foreign-language-assessment
-    env: python
+    env: docker  # Changed to Docker to support FFmpeg installation
     region: frankfurt  # or your preferred region
     plan: starter  # or free for testing
 
-    # FFmpeg is required for audio file processing
-    buildCommand: |
-      # Install FFmpeg for audio processing
-      apt-get update && apt-get install -y ffmpeg
-      # Install Python dependencies
-      pip install -r backend/requirements.txt
-      # Install frontend dependencies and build
-      npm install --prefix frontend
-      # Build frontend with Render's auto-generated URL
-      # RENDER_EXTERNAL_URL is automatically available during build
-      export VITE_API_BASE_URL=${RENDER_EXTERNAL_URL:-http://localhost:8000}
-      npm run build --prefix frontend
-
-    startCommand: bash start.sh
+    # Docker will handle build via Dockerfile
+    # No buildCommand needed - Dockerfile handles everything
 
     # Environment variables - configure these in Render Dashboard
     envVars:
@@ -35,7 +23,7 @@ services:
     # Persistent disk for audio files and reports
     disk:
       name: assessment-data
-      mountPath: /opt/render/project/src/backend
+      mountPath: /app/backend
       sizeGB: 1
 
     # Health check configuration

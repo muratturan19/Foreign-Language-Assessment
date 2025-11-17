@@ -5,7 +5,7 @@ services:
     region: frankfurt  # or your preferred region
     plan: free  # Free tier with native buildpack
     buildCommand: "./build.sh"
-    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    startCommand: "PATH=/opt/render/project/.ffmpeg:$PATH uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
 
     # Environment variables - configure these in Render Dashboard
     envVars:

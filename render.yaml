@@ -1,7 +1,7 @@
 services:
   - type: web
     name: foreign-language-assessment
-    env: python
+    env: docker  # Changed to Docker to support FFmpeg installation
     region: frankfurt  # or your preferred region
     plan: starter  # or free for testing
 

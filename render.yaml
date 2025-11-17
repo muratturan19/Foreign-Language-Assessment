@@ -5,13 +5,12 @@ services:
     region: frankfurt  # or your preferred region
     plan: starter  # or free for testing
 
-    # FFmpeg is required for audio file processing
+    # FFmpeg is required for audio file processing (installed via Aptfile)
     buildCommand: |
-      # Install FFmpeg for audio processing
-      apt-get update && apt-get install -y ffmpeg
       # Install Python dependencies
+      pip install --upgrade pip
       pip install -r backend/requirements.txt
-      # Install frontend dependencies and build
+      # Install Node.js and frontend dependencies
       npm install --prefix frontend
       # Build frontend with Render's auto-generated URL
       # RENDER_EXTERNAL_URL is automatically available during build
@@ -35,7 +34,7 @@ services:
     # Persistent disk for audio files and reports
     disk:
       name: assessment-data
-      mountPath: /opt/render/project/src/backend
+      mountPath: /opt/render/project/src
       sizeGB: 1
 
     # Health check configuration

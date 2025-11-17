@@ -1,12 +1,11 @@
 services:
   - type: web
     name: foreign-language-assessment
-    env: docker  # Using Docker to support FFmpeg installation
+    env: python  # Using native Python buildpack for free tier
     region: frankfurt  # or your preferred region
-    plan: starter  # or free for testing
-
-    # Docker build and start commands are defined in the Dockerfile
-    # No buildCommand or startCommand needed with env: docker
+    plan: free  # Free tier with native buildpack
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
 
     # Environment variables - configure these in Render Dashboard
     envVars:

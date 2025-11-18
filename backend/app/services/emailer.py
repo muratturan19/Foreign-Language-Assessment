@@ -137,7 +137,19 @@ def _send_via_sendgrid(
         )
 
     print("[EMAILER] Using SendGrid fallback for email delivery")
+    print(f"[EMAILER] SendGrid API key: {'SET' if settings.email.sendgrid_api_key else 'NOT SET'}")
+    print(f"[EMAILER] SendGrid API key length: {len(settings.email.sendgrid_api_key) if settings.email.sendgrid_api_key else 0}")
+    print(f"[EMAILER] SendGrid sender: {settings.email.default_sender}")
     logger.info("Using SendGrid fallback for email delivery")
+
+    if not settings.email.default_sender:
+        error_msg = "SendGrid requires a verified sender email (EMAIL_DEFAULT_SENDER or TARGET_EMAIL)"
+        print(f"[EMAILER] ❌ {error_msg}")
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=error_msg,
+        )
 
     message = Mail(
         from_email=settings.email.default_sender,
@@ -171,10 +183,29 @@ def _send_via_sendgrid(
         print(f"[EMAILER] ❌ FAILED to send email via SendGrid!")
         print(f"[EMAILER] Error type: {type(exc).__name__}")
         print(f"[EMAILER] Error message: {str(exc)}")
+
+        # Provide more specific error messages for common issues
+        error_detail = str(exc)
+        if "403" in str(exc) or "Forbidden" in str(exc):
+            print("[EMAILER] 📋 SendGrid 403 Error - Common causes:")
+            print("[EMAILER]   1. Invalid API key - Check SENDGRID_API_KEY is correct")
+            print("[EMAILER]   2. Unverified sender - Verify sender email in SendGrid dashboard")
+            print("[EMAILER]   3. API key lacks send permissions - Check API key scope")
+            print(f"[EMAILER]   Current sender: {settings.email.default_sender}")
+            error_detail = (
+                f"SendGrid authentication failed (403 Forbidden). "
+                f"Please verify: (1) SENDGRID_API_KEY is valid, "
+                f"(2) sender email '{settings.email.default_sender}' is verified in SendGrid, "
+                f"(3) API key has 'Mail Send' permissions. "
+                f"Original error: {str(exc)}"
+            )
+        elif "401" in str(exc) or "Unauthorized" in str(exc):
+            error_detail = f"SendGrid API key is invalid or expired. Please check SENDGRID_API_KEY. Original error: {str(exc)}"
+
         logger.exception("Failed to send email via SendGrid: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to send email via SendGrid: {str(exc)}",
+            detail=error_detail,
         ) from exc
 
 
@@ -214,6 +245,22 @@ def _send_via_smtp(
         print(f"[EMAILER] ❌ FAILED to send email!")
         print(f"[EMAILER] Error type: {type(exc).__name__}")
         print(f"[EMAILER] Error message: {str(exc)}")
+
+        # Provide specific guidance for common SMTP errors
+        error_detail = str(exc)
+        if "Network is unreachable" in str(exc) or "Connection refused" in str(exc):
+            print("[EMAILER] 📋 Network Error - SMTP connection blocked")
+            print("[EMAILER]   This usually happens when cloud platforms block outbound SMTP ports")
+            print("[EMAILER]   Render.com blocks ports 25, 465, and 587 to prevent spam")
+            print("[EMAILER]   Solution: Configure SendGrid (SENDGRID_API_KEY) for email delivery")
+            error_detail = (
+                f"SMTP connection failed - outbound SMTP ports may be blocked by hosting platform. "
+                f"Configure SendGrid (SENDGRID_API_KEY) for reliable email delivery. "
+                f"Original error: {str(exc)}"
+            )
+        elif "Authentication failed" in str(exc) or "Username and Password not accepted" in str(exc):
+            error_detail = f"SMTP authentication failed. Check SMTP_USERNAME and SMTP_PASSWORD. Original error: {str(exc)}"
+
         logger.exception(
             "Failed to send email to %s via %s:%d - Error: %s",
             payload.to,
@@ -223,7 +270,7 @@ def _send_via_smtp(
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to send email: {str(exc)}",
+            detail=error_detail,
         ) from exc
 
     message_id = make_msgid(domain=settings.email.smtp_host)

@@ -13,16 +13,22 @@ TARGET_EMAIL=demo@example.com
 REPORT_LANGUAGE=en
 STORE_TRANSCRIPTS=true
 
-# Email provider configuration (SMTP example)
+# Email provider configuration
+# IMPORTANT: Render.com blocks SMTP ports (25, 465, 587) to prevent spam.
+# Use SendGrid for reliable email delivery on Render.
 EMAIL_PROVIDER=smtp
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=demo@example.com
-SMTP_PASSWORD=change-me
-EMAIL_DEFAULT_SENDER=coach@example.com
+EMAIL_DEFAULT_SENDER=your-verified-email@example.com
 
-# Optional: SendGrid configuration (recommended for production)
-# SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxx
+# SendGrid configuration (REQUIRED for Render deployment)
+# Get your API key from: https://app.sendgrid.com/settings/api_keys
+# Make sure to verify your sender email in SendGrid dashboard
+SENDGRID_API_KEY=SG.your-sendgrid-api-key-here
+
+# SMTP configuration (optional, won't work on Render due to port blocking)
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USERNAME=demo@example.com
+# SMTP_PASSWORD=change-me
 
 # GPT-5 API Configuration (required for LLM-based evaluations)
 GPT5_API_KEY=your-gpt5-api-key-here

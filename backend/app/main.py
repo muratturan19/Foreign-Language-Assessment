@@ -345,18 +345,40 @@ def email_status(_: str = Depends(get_current_token)) -> EmailConfigStatus:
     logger.info(f"[Email Config] Current TARGET_EMAIL: {settings_snapshot.target_email}")
     logger.info(f"[Email Config] Email configured: {settings_snapshot.email.is_configured}")
     missing = settings_snapshot.email.missing_fields()
+
+    # Check what's actually configured
+    smtp_configured = settings_snapshot.email.is_smtp_configured
+    sendgrid_configured = bool(settings_snapshot.email.sendgrid_api_key)
+
+    # Generate diagnostic message
+    diagnosis = []
+    if not smtp_configured and not sendgrid_configured:
+        diagnosis.append("⚠️ No email provider configured. Set up SMTP or SendGrid.")
+    elif smtp_configured and not sendgrid_configured:
+        diagnosis.append("⚠️ SMTP configured but cloud platforms often block SMTP ports. Configure SendGrid as fallback.")
+    elif sendgrid_configured and not smtp_configured:
+        diagnosis.append("✅ SendGrid configured. Emails will be sent via SendGrid.")
+    else:
+        diagnosis.append("✅ Both SMTP and SendGrid configured. SMTP will be tried first, SendGrid as fallback.")
+
+    if sendgrid_configured and not settings_snapshot.email.default_sender:
+        diagnosis.append("⚠️ SendGrid requires EMAIL_DEFAULT_SENDER to be set and verified in SendGrid.")
+
     public_settings = EmailSettingsPublic(
         provider=settings_snapshot.email.provider,
         smtp_host=settings_snapshot.email.smtp_host,
         smtp_port=settings_snapshot.email.smtp_port,
         smtp_username=settings_snapshot.email.smtp_username,
         default_sender=settings_snapshot.email.default_sender,
+        sendgrid_configured=sendgrid_configured,
+        smtp_configured=smtp_configured,
     )
     return EmailConfigStatus(
         configured=settings_snapshot.email.is_configured,
         missing_fields=missing,
         settings=public_settings,
         target_email=settings_snapshot.target_email,
+        diagnosis=" ".join(diagnosis) if diagnosis else None,
     )
 
 
@@ -369,18 +391,40 @@ def configure_email(payload: EmailConfigUpdateRequest, _: str = Depends(get_curr
     set_email_settings(**payload_data)
     settings_snapshot = get_settings()
     missing = settings_snapshot.email.missing_fields()
+
+    # Check what's actually configured
+    smtp_configured = settings_snapshot.email.is_smtp_configured
+    sendgrid_configured = bool(settings_snapshot.email.sendgrid_api_key)
+
+    # Generate diagnostic message
+    diagnosis = []
+    if not smtp_configured and not sendgrid_configured:
+        diagnosis.append("⚠️ No email provider configured. Set up SMTP or SendGrid.")
+    elif smtp_configured and not sendgrid_configured:
+        diagnosis.append("⚠️ SMTP configured but cloud platforms often block SMTP ports. Configure SendGrid as fallback.")
+    elif sendgrid_configured and not smtp_configured:
+        diagnosis.append("✅ SendGrid configured. Emails will be sent via SendGrid.")
+    else:
+        diagnosis.append("✅ Both SMTP and SendGrid configured. SMTP will be tried first, SendGrid as fallback.")
+
+    if sendgrid_configured and not settings_snapshot.email.default_sender:
+        diagnosis.append("⚠️ SendGrid requires EMAIL_DEFAULT_SENDER to be set and verified in SendGrid.")
+
     public_settings = EmailSettingsPublic(
         provider=settings_snapshot.email.provider,
         smtp_host=settings_snapshot.email.smtp_host,
         smtp_port=settings_snapshot.email.smtp_port,
         smtp_username=settings_snapshot.email.smtp_username,
         default_sender=settings_snapshot.email.default_sender,
+        sendgrid_configured=sendgrid_configured,
+        smtp_configured=smtp_configured,
     )
     return EmailConfigStatus(
         configured=settings_snapshot.email.is_configured,
         missing_fields=missing,
         settings=public_settings,
         target_email=settings_snapshot.target_email,
+        diagnosis=" ".join(diagnosis) if diagnosis else None,
     )
 
 

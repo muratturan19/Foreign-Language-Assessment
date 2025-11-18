@@ -190,6 +190,8 @@ class EmailSettingsPublic(BaseModel):
     smtp_port: int
     smtp_username: Optional[str] = None
     default_sender: Optional[EmailStr] = None
+    sendgrid_configured: bool = False
+    smtp_configured: bool = False
 
 
 class EmailConfigStatus(BaseModel):
@@ -197,6 +199,7 @@ class EmailConfigStatus(BaseModel):
     missing_fields: List[str] = Field(default_factory=list)
     settings: EmailSettingsPublic
     target_email: Optional[EmailStr] = None
+    diagnosis: Optional[str] = None
 
 
 class EmailConfigUpdateRequest(BaseModel):

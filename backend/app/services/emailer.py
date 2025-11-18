@@ -9,6 +9,13 @@ from email.message import EmailMessage
 from email.utils import make_msgid
 
 from fastapi import HTTPException, status
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Attachment as SendGridAttachment
+from sendgrid.helpers.mail import Disposition as SendGridDisposition
+from sendgrid.helpers.mail import FileContent as SendGridFileContent
+from sendgrid.helpers.mail import FileName as SendGridFileName
+from sendgrid.helpers.mail import FileType as SendGridFileType
+from sendgrid.helpers.mail import Mail
 
 from ..config import get_settings
 from ..models import EmailRequest, EmailResponse
@@ -16,7 +23,85 @@ from ..models import EmailRequest, EmailResponse
 logger = logging.getLogger(__name__)
 
 
-def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
+def _build_html_body(payload: EmailRequest) -> str:
+    html_body = f"<p>{payload.body}</p>"
+    if payload.links:
+        links_html = "".join(f'<li><a href="{link}">{link}</a></li>' for link in payload.links)
+        if links_html:
+            html_body += f"<ul>{links_html}</ul>"
+    return html_body
+
+
+def _process_attachments(payload: EmailRequest) -> list[dict[str, object]]:
+    processed: list[dict[str, object]] = []
+    if not payload.attachments:
+        return processed
+
+    print(f"\n[EMAILER] Building email with {len(payload.attachments)} attachment(s)")
+    logger.info("Building email with %d attachment(s)", len(payload.attachments))
+
+    for idx, attachment in enumerate(payload.attachments):
+        try:
+            print(f"[EMAILER] Processing attachment {idx+1}/{len(payload.attachments)}: {attachment.filename}")
+            print(f"[EMAILER]   Type: {attachment.content_type}, Encoded size: {len(attachment.data)} bytes")
+            logger.debug(
+                "Processing attachment %d/%d: %s (type: %s, encoded size: %d bytes)",
+                idx + 1,
+                len(payload.attachments),
+                attachment.filename,
+                attachment.content_type,
+                len(attachment.data),
+            )
+            file_bytes = base64.b64decode(attachment.data, validate=True)
+            print(f"[EMAILER] Attachment {attachment.filename} decoded successfully, size: {len(file_bytes)} bytes")
+            logger.debug(
+                "Attachment %s decoded successfully, size: %d bytes",
+                attachment.filename,
+                len(file_bytes),
+            )
+        except (binascii.Error, ValueError) as exc:
+            logger.error(
+                "Failed to decode email attachment %s (type: %s, encoded size: %d): %s",
+                attachment.filename,
+                attachment.content_type,
+                len(attachment.data) if attachment.data else 0,
+                exc,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid attachment provided: {attachment.filename}",
+            ) from exc
+
+        maintype, subtype = "application", "octet-stream"
+        if "/" in attachment.content_type:
+            parts = attachment.content_type.split("/", 1)
+            maintype, subtype = parts[0], parts[1]
+
+        processed.append(
+            {
+                "filename": attachment.filename,
+                "maintype": maintype,
+                "subtype": subtype,
+                "file_bytes": file_bytes,
+                "encoded": base64.b64encode(file_bytes).decode(),
+            }
+        )
+
+        print(
+            f"[EMAILER] ✅ Attachment {attachment.filename} added successfully ({maintype}/{subtype}, {len(file_bytes)} bytes)"
+        )
+        logger.info(
+            "Attachment %s added successfully (%s/%s, %d bytes)",
+            attachment.filename,
+            maintype,
+            subtype,
+            len(file_bytes),
+        )
+
+    return processed
+
+
+def _build_email_message(payload: EmailRequest, sender: str, attachments: list[dict[str, object]]) -> EmailMessage:
     message = EmailMessage()
     message["Subject"] = payload.subject
     message["From"] = sender
@@ -25,110 +110,78 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
     plain_body = payload.body
     message.set_content(plain_body)
 
+    html_body = _build_html_body(payload)
     if payload.links:
-        links_html = "".join(f'<li><a href="{link}">{link}</a></li>' for link in payload.links)
-        html_body = f"<p>{payload.body}</p>"
-        if links_html:
-            html_body += f"<ul>{links_html}</ul>"
         message.add_alternative(html_body, subtype="html")
 
-    if payload.attachments:
-        print(f"\n[EMAILER] Building email with {len(payload.attachments)} attachment(s)")
-        logger.info("Building email with %d attachment(s)", len(payload.attachments))
-        for idx, attachment in enumerate(payload.attachments):
-            try:
-                print(f"[EMAILER] Processing attachment {idx+1}/{len(payload.attachments)}: {attachment.filename}")
-                print(f"[EMAILER]   Type: {attachment.content_type}, Encoded size: {len(attachment.data)} bytes")
-                logger.debug(
-                    "Processing attachment %d/%d: %s (type: %s, encoded size: %d bytes)",
-                    idx + 1,
-                    len(payload.attachments),
-                    attachment.filename,
-                    attachment.content_type,
-                    len(attachment.data),
-                )
-                file_bytes = base64.b64decode(attachment.data, validate=True)
-                print(f"[EMAILER] Attachment {attachment.filename} decoded successfully, size: {len(file_bytes)} bytes")
-                logger.debug(
-                    "Attachment %s decoded successfully, size: %d bytes",
-                    attachment.filename,
-                    len(file_bytes),
-                )
-            except (binascii.Error, ValueError) as exc:
-                logger.error(
-                    "Failed to decode email attachment %s (type: %s, encoded size: %d): %s",
-                    attachment.filename,
-                    attachment.content_type,
-                    len(attachment.data) if attachment.data else 0,
-                    exc,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid attachment provided: {attachment.filename}",
-                ) from exc
-
-            maintype, subtype = "application", "octet-stream"
-            if "/" in attachment.content_type:
-                parts = attachment.content_type.split("/", 1)
-                maintype, subtype = parts[0], parts[1]
-
+    if attachments:
+        for attachment in attachments:
             message.add_attachment(
-                file_bytes,
-                maintype=maintype,
-                subtype=subtype,
-                filename=attachment.filename,
-            )
-            print(f"[EMAILER] ✅ Attachment {attachment.filename} added successfully ({maintype}/{subtype}, {len(file_bytes)} bytes)")
-            logger.info(
-                "Attachment %s added successfully (%s/%s, %d bytes)",
-                attachment.filename,
-                maintype,
-                subtype,
-                len(file_bytes),
+                attachment["file_bytes"],
+                maintype=str(attachment["maintype"]),
+                subtype=str(attachment["subtype"]),
+                filename=str(attachment["filename"]),
             )
 
     return message
 
 
-def send_email(payload: EmailRequest) -> EmailResponse:
-    print(f"\n[EMAILER] send_email called")
-    print(f"[EMAILER] Recipient: {payload.to}")
-    print(f"[EMAILER] Subject: {payload.subject}")
-    print(f"[EMAILER] Body length: {len(payload.body)} chars")
-    print(f"[EMAILER] Attachments: {len(payload.attachments) if payload.attachments else 0}")
-
+def _send_via_sendgrid(
+    payload: EmailRequest, html_body: str, attachments: list[dict[str, object]]
+) -> EmailResponse:
     settings = get_settings()
-    print(f"[EMAILER] SMTP Host: {settings.email.smtp_host}")
-    print(f"[EMAILER] SMTP Port: {settings.email.smtp_port}")
-    print(f"[EMAILER] SMTP Username: {settings.email.smtp_username}")
-    print(f"[EMAILER] Default Sender: {settings.email.default_sender}")
-
-    missing = settings.email.missing_fields()
-    if missing:
-        print(f"[EMAILER] ❌ ERROR: Missing email configuration fields: {', '.join(missing)}")
-        logger.warning("Email configuration missing fields: %s", ", ".join(missing))
+    if not settings.email.sendgrid_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Email service is not configured: missing {', '.join(missing)}",
+            detail="SendGrid API key is not configured",
         )
 
-    print(f"[EMAILER] ✅ Email configuration is complete")
-    logger.info(
-        "Sending email to %s with subject '%s' and %d attachment(s)",
-        payload.to,
-        payload.subject,
-        len(payload.attachments) if payload.attachments else 0,
+    print("[EMAILER] Using SendGrid fallback for email delivery")
+    logger.info("Using SendGrid fallback for email delivery")
+
+    message = Mail(
+        from_email=settings.email.default_sender,
+        to_emails=payload.to,
+        subject=payload.subject,
+        html_content=html_body,
+        plain_text_content=payload.body,
     )
 
+    for attachment in attachments:
+        sg_attachment = SendGridAttachment(
+            file_content=SendGridFileContent(str(attachment["encoded"])),
+            file_type=SendGridFileType(f"{attachment['maintype']}/{attachment['subtype']}"),
+            file_name=SendGridFileName(str(attachment["filename"])),
+            disposition=SendGridDisposition("attachment"),
+        )
+        message.add_attachment(sg_attachment)
+
     try:
-        message = _build_email_message(payload, sender=str(settings.email.default_sender))
-    except Exception as exc:
-        logger.exception("Failed to build email message: %s", exc)
+        sg = SendGridAPIClient(settings.email.sendgrid_api_key)
+        response = sg.send(message)
+        message_id = (
+            response.headers.get("X-Message-Id")
+            or response.headers.get("X-Message-ID")
+            or make_msgid(domain="sendgrid.net")
+        )
+        print(f"[EMAILER] ✅ Email sent successfully via SendGrid (message_id={message_id})")
+        logger.info("Email sent successfully via SendGrid with message_id %s", message_id)
+        return EmailResponse(status="sent", message_id=message_id)
+    except Exception as exc:  # pragma: no cover - network interaction
+        print(f"[EMAILER] ❌ FAILED to send email via SendGrid!")
+        print(f"[EMAILER] Error type: {type(exc).__name__}")
+        print(f"[EMAILER] Error message: {str(exc)}")
+        logger.exception("Failed to send email via SendGrid: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to build email message: {str(exc)}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to send email via SendGrid: {str(exc)}",
         ) from exc
 
+
+def _send_via_smtp(
+    payload: EmailRequest, message: EmailMessage, attachments: list[dict[str, object]]
+) -> EmailResponse:
+    settings = get_settings()
     context = ssl.create_default_context()
 
     try:
@@ -178,3 +231,65 @@ def send_email(payload: EmailRequest) -> EmailResponse:
     logger.info("Email sent successfully to %s with message_id %s", payload.to, message_id)
     print(f"[EMAILER] ✅✅✅ EMAIL SEND COMPLETE ✅✅✅\n")
     return EmailResponse(status="sent", message_id=message_id)
+
+
+def send_email(payload: EmailRequest) -> EmailResponse:
+    print(f"\n[EMAILER] send_email called")
+    print(f"[EMAILER] Recipient: {payload.to}")
+    print(f"[EMAILER] Subject: {payload.subject}")
+    print(f"[EMAILER] Body length: {len(payload.body)} chars")
+    print(f"[EMAILER] Attachments: {len(payload.attachments) if payload.attachments else 0}")
+
+    settings = get_settings()
+    print(f"[EMAILER] SMTP Host: {settings.email.smtp_host}")
+    print(f"[EMAILER] SMTP Port: {settings.email.smtp_port}")
+    print(f"[EMAILER] SMTP Username: {settings.email.smtp_username}")
+    print(f"[EMAILER] Default Sender: {settings.email.default_sender}")
+
+    missing = settings.email.missing_fields()
+    if missing:
+        print(f"[EMAILER] ❌ ERROR: Missing email configuration fields: {', '.join(missing)}")
+        logger.warning("Email configuration missing fields: %s", ", ".join(missing))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Email service is not configured: missing {', '.join(missing)}",
+        )
+
+    print(f"[EMAILER] ✅ Email configuration is complete")
+    logger.info(
+        "Sending email to %s with subject '%s' and %d attachment(s)",
+        payload.to,
+        payload.subject,
+        len(payload.attachments) if payload.attachments else 0,
+    )
+
+    attachments = _process_attachments(payload)
+    html_body = _build_html_body(payload)
+    try:
+        message = _build_email_message(payload, sender=str(settings.email.default_sender), attachments=attachments)
+    except Exception as exc:
+        logger.exception("Failed to build email message: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to build email message: {str(exc)}",
+        ) from exc
+
+    if settings.email.is_smtp_configured:
+        try:
+            return _send_via_smtp(payload, message, attachments)
+        except HTTPException as exc:
+            if settings.email.sendgrid_api_key:
+                print("[EMAILER] Falling back to SendGrid after SMTP failure")
+                logger.info("Falling back to SendGrid after SMTP failure")
+                return _send_via_sendgrid(payload, html_body, attachments)
+            raise exc
+
+    if settings.email.sendgrid_api_key:
+        print("[EMAILER] SMTP not configured; using SendGrid")
+        logger.info("SMTP not configured; using SendGrid")
+        return _send_via_sendgrid(payload, html_body, attachments)
+
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Email service is not configured for SMTP or SendGrid",
+    )

@@ -68,25 +68,41 @@ class EmailSettings(BaseModel):
     default_sender: EmailStr | None = None
 
     def missing_fields(self) -> list[str]:
-        if self.provider.lower() != "smtp":
-            return []
+        has_sendgrid = bool(self.sendgrid_api_key)
 
         missing: list[str] = []
-        if not self.smtp_host:
-            missing.append("smtp_host")
-        if not self.smtp_username:
-            missing.append("smtp_username")
-        if not self.smtp_password:
-            missing.append("smtp_password")
         if not self.default_sender:
             missing.append("default_sender")
-        if not self.smtp_port:
-            missing.append("smtp_port")
+
+        smtp_missing: list[str] = []
+        if self.provider.lower() == "smtp":
+            if not self.smtp_host:
+                smtp_missing.append("smtp_host")
+            if not self.smtp_username:
+                smtp_missing.append("smtp_username")
+            if not self.smtp_password:
+                smtp_missing.append("smtp_password")
+            if not self.smtp_port:
+                smtp_missing.append("smtp_port")
+
+        if smtp_missing and not has_sendgrid:
+            missing.extend(smtp_missing)
+
         return missing
 
     @property
     def is_configured(self) -> bool:
         return len(self.missing_fields()) == 0
+
+    @property
+    def is_smtp_configured(self) -> bool:
+        return (
+            bool(self.smtp_host)
+            and bool(self.smtp_username)
+            and bool(self.smtp_password)
+            and bool(self.default_sender)
+            and bool(self.smtp_port)
+        )
 
 
 class AppSettings(BaseModel):

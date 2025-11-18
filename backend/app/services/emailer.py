@@ -91,15 +91,28 @@ def _build_email_message(payload: EmailRequest, sender: str) -> EmailMessage:
 
 
 def send_email(payload: EmailRequest) -> EmailResponse:
+    print(f"\n[EMAILER] send_email called")
+    print(f"[EMAILER] Recipient: {payload.to}")
+    print(f"[EMAILER] Subject: {payload.subject}")
+    print(f"[EMAILER] Body length: {len(payload.body)} chars")
+    print(f"[EMAILER] Attachments: {len(payload.attachments) if payload.attachments else 0}")
+
     settings = get_settings()
+    print(f"[EMAILER] SMTP Host: {settings.email.smtp_host}")
+    print(f"[EMAILER] SMTP Port: {settings.email.smtp_port}")
+    print(f"[EMAILER] SMTP Username: {settings.email.smtp_username}")
+    print(f"[EMAILER] Default Sender: {settings.email.default_sender}")
+
     missing = settings.email.missing_fields()
     if missing:
+        print(f"[EMAILER] ❌ ERROR: Missing email configuration fields: {', '.join(missing)}")
         logger.warning("Email configuration missing fields: %s", ", ".join(missing))
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Email service is not configured: missing {', '.join(missing)}",
         )
 
+    print(f"[EMAILER] ✅ Email configuration is complete")
     logger.info(
         "Sending email to %s with subject '%s' and %d attachment(s)",
         payload.to,
@@ -119,22 +132,35 @@ def send_email(payload: EmailRequest) -> EmailResponse:
     context = ssl.create_default_context()
 
     try:
+        print(f"[EMAILER] Connecting to SMTP server {settings.email.smtp_host}:{settings.email.smtp_port}")
         logger.debug("Connecting to SMTP server %s:%d", settings.email.smtp_host, settings.email.smtp_port)
         if settings.email.smtp_port == 465:
+            print(f"[EMAILER] Using SMTP_SSL (port 465)")
             with smtplib.SMTP_SSL(settings.email.smtp_host, settings.email.smtp_port, context=context) as server:
+                print(f"[EMAILER] Connected successfully, logging in as {settings.email.smtp_username}")
                 logger.debug("Logging in to SMTP server as %s", settings.email.smtp_username)
                 server.login(settings.email.smtp_username, settings.email.smtp_password)
+                print(f"[EMAILER] Login successful, sending email message")
                 logger.debug("Sending email message")
                 server.send_message(message)
+                print(f"[EMAILER] ✅ Email sent successfully via SMTP_SSL")
         else:
+            print(f"[EMAILER] Using SMTP with STARTTLS (port {settings.email.smtp_port})")
             with smtplib.SMTP(settings.email.smtp_host, settings.email.smtp_port) as server:
+                print(f"[EMAILER] Connected, starting TLS")
                 logger.debug("Starting TLS")
                 server.starttls(context=context)
+                print(f"[EMAILER] TLS started, logging in as {settings.email.smtp_username}")
                 logger.debug("Logging in to SMTP server as %s", settings.email.smtp_username)
                 server.login(settings.email.smtp_username, settings.email.smtp_password)
+                print(f"[EMAILER] Login successful, sending email message")
                 logger.debug("Sending email message")
                 server.send_message(message)
+                print(f"[EMAILER] ✅ Email sent successfully via SMTP+STARTTLS")
     except Exception as exc:  # pragma: no cover - network interaction
+        print(f"[EMAILER] ❌ FAILED to send email!")
+        print(f"[EMAILER] Error type: {type(exc).__name__}")
+        print(f"[EMAILER] Error message: {str(exc)}")
         logger.exception(
             "Failed to send email to %s via %s:%d - Error: %s",
             payload.to,
@@ -148,5 +174,7 @@ def send_email(payload: EmailRequest) -> EmailResponse:
         ) from exc
 
     message_id = make_msgid(domain=settings.email.smtp_host)
+    print(f"[EMAILER] Message ID: {message_id}")
     logger.info("Email sent successfully to %s with message_id %s", payload.to, message_id)
+    print(f"[EMAILER] ✅✅✅ EMAIL SEND COMPLETE ✅✅✅\n")
     return EmailResponse(status="sent", message_id=message_id)

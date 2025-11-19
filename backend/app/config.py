@@ -244,6 +244,7 @@ def set_email_settings(**kwargs: str | int | None) -> AppSettings:
         "smtp_port": "SMTP_PORT",
         "smtp_username": "SMTP_USERNAME",
         "smtp_password": "SMTP_PASSWORD",
+        "sendgrid_api_key": "SENDGRID_API_KEY",
         "default_sender": "EMAIL_DEFAULT_SENDER",
         "target_email": "TARGET_EMAIL",
     }

@@ -208,5 +208,6 @@ class EmailConfigUpdateRequest(BaseModel):
     smtp_port: Optional[int] = None
     smtp_username: Optional[str] = None
     smtp_password: Optional[str] = None
+    sendgrid_api_key: Optional[str] = None
     default_sender: Optional[EmailStr] = None
     target_email: Optional[EmailStr] = None

@@ -12,6 +12,8 @@ frontend/dist/
 *.log
 frontend/.env
 
-# Reports
+# Reports & audio (runtime data)
 backend/generated_reports/
 backend/protected_reports/
+backend/audio_files/
+backend/reports/

@@ -1,0 +1,54 @@
+services:
+  fla-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: fla_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - fla_audio:/app/backend/audio_files
+      - fla_reports:/app/backend/reports
+    networks:
+      - fla_internal
+    labels:
+      - "traefik.enable=false"
+
+  fla-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: fla_frontend
+    restart: unless-stopped
+    depends_on:
+      - fla-backend
+    networks:
+      - web
+      - fla_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+
+      # --- HTTPS router ---
+      - "traefik.http.routers.fla-frontend.rule=Host(`interview.kolektif360.com`)"
+      - "traefik.http.routers.fla-frontend.entrypoints=websecure"
+      - "traefik.http.routers.fla-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.fla-frontend.priority=10"
+      - "traefik.http.services.fla-frontend.loadbalancer.server.port=80"
+
+      # --- HTTP → HTTPS redirect ---
+      - "traefik.http.routers.fla-frontend-http.rule=Host(`interview.kolektif360.com`)"
+      - "traefik.http.routers.fla-frontend-http.entrypoints=web"
+      - "traefik.http.routers.fla-frontend-http.middlewares=fla-https-redirect"
+      - "traefik.http.middlewares.fla-https-redirect.redirectscheme.scheme=https"
+
+volumes:
+  fla_audio:
+  fla_reports:
+
+networks:
+  web:
+    external: true
+  fla_internal:
+    driver: bridge

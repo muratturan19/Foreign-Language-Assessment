@@ -6,10 +6,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Form, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+import jwt
+
 
 from .auth import get_current_token
 from .config import get_settings, set_gpt5_api_key, set_email_settings
@@ -44,6 +46,7 @@ from .services.emailer import send_email
 from .services.reporting import get_latest_report_for_session, persist_report, resolve_report_token
 from .services.audio import store_session_audio
 from .services.session_store import get_store
+from . import portal_sso
 
 app = FastAPI(title="Foreign Language Assessment API", version="0.1.0")
 settings = get_settings()
@@ -67,9 +70,53 @@ def _resolve_frontend_dist() -> Path | None:
 
 
 
+@app.post("/api/sso/login", tags=["auth"])
+def sso_login(token: str = Form(...)) -> RedirectResponse:
+    """Portal SSO entry point.
+
+    Receives the RS256 JWT issued by the Portal as a form field,
+    validates it, and redirects to the frontend with session params.
+    """
+    try:
+        payload = portal_sso.validate_token(token)
+    except Exception as exc:
+        logger.warning("SSO token validation failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from exc
+
+    tenant_slug = payload.get("tenant_slug", "")
+    return RedirectResponse(
+        url=f"/?access_token={token}&tenant_slug={tenant_slug}",
+        status_code=302,
+    )
+
+
 @app.get("/health", tags=["health"])
 def health_check() -> dict:
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/me", tags=["auth"])
+def get_current_user_info(request: Request, _: str = Depends(get_current_token)) -> dict:
+    """Decode 'delta_token' user cookie to identify admin status."""
+    cookie_token = request.cookies.get("delta_token")
+    if not cookie_token:
+        # If no cookie, just return non-admin
+        return {"is_platform_admin": False, "username": None}
+
+    if not settings.jwt_secret_key:
+        logger.warning("JWT_SECRET_KEY not set, cannot verify user cookie.")
+        return {"is_platform_admin": False, "username": None, "error": "Configuration missing"}
+
+    try:
+        payload = jwt.decode(cookie_token, settings.jwt_secret_key, algorithms=["HS256"])
+        return {
+            "is_platform_admin": payload.get("is_platform_admin", False),
+            "username": payload.get("user"),
+        }
+    except jwt.ExpiredSignatureError:
+        return {"is_platform_admin": False, "error": "Token expired"}
+    except jwt.InvalidTokenError:
+        return {"is_platform_admin": False, "error": "Invalid token"}
 
 
 @app.post("/api/session/start", response_model=SessionStartResponse, tags=["session"])

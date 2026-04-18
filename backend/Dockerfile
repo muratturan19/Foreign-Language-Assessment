@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend/ ./backend/
 COPY configs/ ./configs/
+COPY questions.md ./questions.md
 
 # Directories for persistent data (mounted as volumes in production)
 RUN mkdir -p backend/audio_files backend/reports

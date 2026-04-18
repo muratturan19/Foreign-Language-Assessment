@@ -62,7 +62,7 @@ function App() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex items-center gap-2 rounded-full border border-[#F47B20]/40 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#F47B20] hover:text-[#F47B20] dark:border-[#F47B20]/40 dark:bg-[#0D1B3E] dark:text-slate-100 dark:hover:border-[#F47B20] dark:hover:text-[#F47B20]"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             aria-label="Tema değiştir"
           >
             {theme === "dark" ? "Açık Tema" : "Koyu Tema"}

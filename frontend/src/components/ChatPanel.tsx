@@ -1219,10 +1219,6 @@ export function ChatPanel() {
             <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
               {/* Sol: Başlık + CTA */}
               <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F47B20]/40 bg-[#F47B20]/10 px-4 py-1.5 text-sm font-semibold text-[#F47B20]">
-                  <span className="h-2 w-2 rounded-full bg-[#F47B20]"></span>
-                  Yapay Zeka Destekli
-                </div>
                 <h1 className="mb-4 text-4xl font-bold leading-tight text-[#0D1B3E] dark:text-white">
                   İngilizce Konuşma<br />
                   <span className="text-[#F47B20]">Değerlendirmesi</span>

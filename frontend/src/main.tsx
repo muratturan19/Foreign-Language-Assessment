@@ -54,9 +54,9 @@ function App() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/logo.png"
-              alt="Foreign Language Assessment logosu"
-              className="h-12 w-auto"
+              src={theme === "dark" ? "/logo-dark.jpeg" : "/logo.jpeg"}
+              alt="Kolektif360"
+              className="h-12 w-auto rounded-lg"
             />
           </div>
           <button

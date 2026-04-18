@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="480" height="160" viewBox="0 0 480 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .logoname {
+        font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+        font-weight: 700;
+        font-size: 64px;
+        fill: #FFFFFF;
+        letter-spacing: -0.5px;
+      }
+      .tagline {
+        font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+        font-weight: 500;
+        font-size: 13px;
+        fill: #378ADD;
+        letter-spacing: 0.1em;
+      }
+    </style>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="480" height="160" rx="12" fill="#071525"/>
+
+  <!-- ── ICON ── -->
+  <g transform="translate(8, 0)">
+    <circle cx="80" cy="80" r="76" fill="#0A2540"/>
+    <circle cx="80" cy="80" r="66" fill="none" stroke="#0C447C" stroke-width="0.8" stroke-dasharray="10 5" opacity="0.7"/>
+    <path d="M22 54 Q14 80 22 106" fill="none" stroke="#85B7EB" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+    <path d="M34 44 Q22 80 34 116" fill="none" stroke="#85B7EB" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+    <path d="M138 54 Q146 80 138 106" fill="none" stroke="#85B7EB" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+    <path d="M126 44 Q138 80 126 116" fill="none" stroke="#85B7EB" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+    <rect x="60" y="28" width="40" height="56" rx="20" fill="#378ADD"/>
+    <line x1="60" y1="50" x2="100" y2="50" stroke="#042C53" stroke-width="1.5" opacity="0.35"/>
+    <line x1="60" y1="62" x2="100" y2="62" stroke="#042C53" stroke-width="1.5" opacity="0.35"/>
+    <line x1="60" y1="74" x2="100" y2="74" stroke="#042C53" stroke-width="1.5" opacity="0.35"/>
+    <path d="M48 80 Q48 110 80 110 Q112 110 112 80" fill="none" stroke="#85B7EB" stroke-width="3" stroke-linecap="round"/>
+    <line x1="80" y1="110" x2="80" y2="126" stroke="#85B7EB" stroke-width="3" stroke-linecap="round"/>
+    <line x1="60" y1="126" x2="100" y2="126" stroke="#85B7EB" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="92" y="22" width="26" height="18" rx="5" fill="#4BA3DE"/>
+    <text style="font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;font-weight:700;font-size:10px;fill:#E6F1FB" x="105" y="34" text-anchor="middle">C2</text>
+  </g>
+
+  <!-- ── WORDMARK ── -->
+  <text class="logoname" x="182" y="98">TalkSim</text>
+  <text class="tagline" x="185" y="122">İNGİLİZCE DEĞERLENDİRME</text>
+</svg>

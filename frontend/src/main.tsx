@@ -54,8 +54,8 @@ function App() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src={theme === "dark" ? "/logo-dark.jpeg" : "/logo.jpeg"}
-              alt="Kolektif360"
+              src={theme === "dark" ? "/talksim_logo_dark.svg" : "/talksim_logo.svg"}
+              alt="TalkSim"
               className="h-12 w-auto rounded-lg"
             />
           </div>

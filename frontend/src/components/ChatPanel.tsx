@@ -115,14 +115,14 @@ export function ChatPanel() {
     if (!emailFeedback) return "";
     switch (emailFeedback.type) {
       case "success":
-        return "border-emerald-400/40 bg-emerald-500/10 text-emerald-100";
+        return "border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200";
       case "error":
-        return "border-rose-400/40 bg-rose-500/10 text-rose-100";
+        return "border-rose-400 bg-rose-50 text-rose-800 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-200";
       case "info":
-        return "border-sky-400/40 bg-sky-500/10 text-sky-100";
+        return "border-sky-400 bg-sky-50 text-sky-800 dark:border-sky-400/40 dark:bg-sky-500/10 dark:text-sky-200";
       case "warning":
       default:
-        return "border-amber-400/40 bg-amber-500/10 text-amber-100";
+        return "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200";
     }
   }, [emailFeedback]);
 

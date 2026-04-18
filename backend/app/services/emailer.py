@@ -152,7 +152,7 @@ def _send_via_sendgrid(
         )
 
     message = Mail(
-        from_email=(settings.email.default_sender, "TalkSim"),
+        from_email=(settings.email.default_sender, "TalkSim✨"),
         to_emails=payload.to,
         subject=payload.subject,
         html_content=html_body,

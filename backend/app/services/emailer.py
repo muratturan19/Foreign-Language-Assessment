@@ -321,6 +321,17 @@ def send_email(payload: EmailRequest) -> EmailResponse:
             detail=f"Failed to build email message: {str(exc)}",
         ) from exc
 
+    # If provider is explicitly "sendgrid", skip SMTP entirely
+    if settings.email.provider.lower() == "sendgrid":
+        if settings.email.sendgrid_api_key:
+            print("[EMAILER] Provider=sendgrid; using SendGrid directly")
+            logger.info("Provider=sendgrid; using SendGrid directly")
+            return _send_via_sendgrid(payload, html_body, attachments)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="EMAIL_PROVIDER=sendgrid but SENDGRID_API_KEY is not set",
+        )
+
     if settings.email.is_smtp_configured:
         try:
             return _send_via_smtp(payload, message, attachments)

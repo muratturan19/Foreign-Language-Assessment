@@ -1165,11 +1165,11 @@ export function ChatPanel() {
         </div>
       )}
       {/* Animasyonlu Arka Plan */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"></div>
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#F0F4F8] via-white to-[#E8EDF5] dark:from-[#071525] dark:via-[#0D1B3E] dark:to-[#071525]"></div>
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full blur-3xl bg-cyan-200/40 animate-pulse dark:bg-violet-500/20"></div>
-        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full blur-3xl bg-violet-200/40 animate-pulse" style={{ animationDelay: "700ms" }}></div>
-        <div className="absolute top-1/2 left-1/2 h-96 w-96 rounded-full blur-3xl bg-fuchsia-200/40 animate-pulse" style={{ animationDelay: "1000ms" }}></div>
+        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full blur-3xl bg-[#F47B20]/10 animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full blur-3xl bg-[#1E3A6E]/20 animate-pulse dark:bg-[#1E3A6E]/30" style={{ animationDelay: "700ms" }}></div>
+        <div className="absolute top-1/2 left-1/2 h-96 w-96 rounded-full blur-3xl bg-[#F47B20]/5 animate-pulse" style={{ animationDelay: "1000ms" }}></div>
       </div>
 
       <div className="relative flex flex-col gap-12">
@@ -1187,67 +1187,104 @@ export function ChatPanel() {
         )}
         {/* Ana Sohbet Alanı */}
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-cyan-300 bg-cyan-50 px-5 py-4 text-sm text-cyan-900 shadow-lg dark:border-cyan-400/30 dark:bg-cyan-500/10 dark:text-cyan-50">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-cyan-700 dark:text-cyan-200/80">Değerlendirilen Aday</p>
-              <p className="text-lg font-semibold text-cyan-900 dark:text-white">{participantInfo.fullName || "Bilgiler bekleniyor"}</p>
-              <p className="text-xs text-cyan-700/80 dark:text-cyan-200/70">{participantInfo.email || "E-posta henüz girilmedi"}</p>
-              <p className="text-xs text-cyan-700/80 dark:text-cyan-200/70">
-                Rapor paylaşım onayı: {participantInfo.shareReportConsent ? "Verildi" : "Bekleniyor"}
-              </p>
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#F47B20]/20 bg-white px-5 py-4 shadow-lg dark:border-[#F47B20]/20 dark:bg-[#0D1B3E]/80">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#0D1B3E] to-[#1E4A8C] text-base font-bold text-white shadow-lg">
+                  {participantInfo.fullName
+                    ? participantInfo.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+                    : "?"}
+                </div>
+                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#0D1B3E]"></span>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Değerlendirilen Aday</p>
+                <p className="text-base font-semibold text-slate-900 dark:text-white">{participantInfo.fullName || "Bilgiler bekleniyor"}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{participantInfo.email || "E-posta henüz girilmedi"}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Rapor paylaşım onayı: {participantInfo.shareReportConsent ? "Verildi" : "Bekleniyor"}
+                </p>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => setParticipantModalOpen(true)}
-              className="rounded-xl border border-cyan-400 px-4 py-2 text-xs font-semibold text-cyan-800 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-900 dark:border-cyan-300/60 dark:text-cyan-50 dark:hover:border-white dark:hover:text-white"
+              className="rounded-xl bg-[#F47B20] px-4 py-2 text-xs font-semibold text-white shadow transition hover:bg-[#E06010]"
             >
-              Bilgileri Güncelle
+              Düzenle
             </button>
           </div>
           {/* Karşılama Bölümü */}
-          <div className="mb-8 text-center">
-            <div className="mb-4 inline-flex items-center gap-3">
-              <div className="rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 p-3 shadow-lg shadow-violet-500/50">
-                <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
+          <div className="mb-8">
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+              {/* Sol: Başlık + CTA */}
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F47B20]/40 bg-[#F47B20]/10 px-4 py-1.5 text-sm font-semibold text-[#F47B20]">
+                  <span className="h-2 w-2 rounded-full bg-[#F47B20]"></span>
+                  Yapay Zeka Destekli
+                </div>
+                <h1 className="mb-4 text-4xl font-bold leading-tight text-[#0D1B3E] dark:text-white">
+                  İngilizce Konuşma<br />
+                  <span className="text-[#F47B20]">Değerlendirmesi</span>
+                </h1>
+                <p className="mb-6 max-w-md text-base text-slate-600 dark:text-slate-300">
+                  Tüm yönlendirmeler Türkçe, konuşma egzersizleri ise İngilizce yapılır. Akıcı ve anlaşılır yanıtlar vermeniz değerlendirmeyi olumlu etkileyecektir.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleStart}
+                    disabled={blockingForConfig || isLoading || !participantInfoReady}
+                    className="rounded-xl bg-[#F47B20] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#F47B20]/30 transition hover:bg-[#E06010] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {session ? "🔄 Oturumu Yeniden Başlat" : "▶ Oturumu Başlat"}
+                  </button>
+                  <button
+                    onClick={handleAutoResponse}
+                    disabled={blockingForConfig || isLoading || !participantInfoReady}
+                    className="rounded-xl border-2 border-[#F47B20] px-8 py-3.5 text-base font-semibold text-[#F47B20] transition hover:bg-[#F47B20]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    ⚡ Örnek Yanıt Oluştur
+                  </button>
+                </div>
               </div>
-            </div>
-            <h1 className="mb-4 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 bg-clip-text text-5xl font-bold text-transparent">
-              Yapay Zeka Destekli İngilizce Konuşma Değerlendirmesi
-            </h1>
-            <p className="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-300">
-              <span className="block">Tüm yönlendirmeler Türkçe, konuşma egzersizleri ise İngilizce yapılır.</span>
-              <span className="block">Akıcı ve anlaşılır yanıtlar vermeniz değerlendirmeyi olumlu etkileyecektir.</span>
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={handleStart}
-                disabled={blockingForConfig || isLoading || !participantInfoReady}
-                className="group/btn relative overflow-hidden rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 transition-transform duration-300 group-hover/btn:scale-110"></div>
-                <span className="relative text-white">
-                  {session ? "🔄 Oturumu Yeniden Başlat" : "▶️ Oturumu Başlat"}
-                </span>
-              </button>
-              <button
-                onClick={handleAutoResponse}
-                disabled={blockingForConfig || isLoading || !participantInfoReady}
-                className="group relative overflow-hidden rounded-xl px-6 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 transition-transform duration-300 group-hover:scale-110"></div>
-                <span className="relative text-white">⚡ Örnek Mülakat Yanıtı Oluştur</span>
-              </button>
+              {/* Sağ: Simülasyon Önizleme */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-white/10 dark:bg-[#0D1B3E]/60">
+                <div className="mb-3 flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-400"></div>
+                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-400"></div>
+                  <div className="h-2.5 w-2.5 rounded-full bg-green-400"></div>
+                  <span className="ml-2 text-xs font-medium text-slate-400">Simülasyon Önizleme</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-slate-50 p-3 dark:bg-[#071525]">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#F47B20]">Soru</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200">Describe a challenging work experience and how you overcame it.</p>
+                  </div>
+                  <div className="rounded-xl border-l-4 border-blue-400 bg-blue-50 p-3 dark:bg-blue-900/20">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Yanıt</p>
+                    <p className="line-clamp-2 text-sm text-slate-700 dark:text-slate-200">Certainly! One experience that stands out is when our team had to deliver a new feature under a strict deadline...</p>
+                  </div>
+                  <div className="rounded-xl border-l-4 border-emerald-400 bg-emerald-50 p-3 dark:bg-emerald-900/20">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">AI Değerlendirme</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 dark:text-slate-200">CEFR Seviyesi</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-300">B2 — C1</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700">
+                      <div className="h-1.5 w-[78%] rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Ses Kaydı ve İşlemler */}
           <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <div className="relative group">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 opacity-0 blur-lg transition-opacity duration-500 group-hover:opacity-100"></div>
-              <div className="relative h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-white/5 dark:backdrop-blur-xl">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">Sesli Yanıt Yakalama</h2>
+              <div className="absolute inset-0 rounded-2xl bg-[#F47B20]/5 opacity-0 blur-lg transition-opacity duration-500 group-hover:opacity-100"></div>
+              <div className="relative h-full rounded-2xl border border-slate-200 border-l-4 border-l-[#F47B20] bg-white p-4 shadow-xl dark:border-white/10 dark:border-l-[#F47B20] dark:bg-[#0D1B3E]/60">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-[#F47B20]">Sesli Yanıt Yakalama</h2>
                 <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                   Mikrofon kontrollerine buradan ulaşarak İngilizce yanıtlarınızı hızlıca kaydedin.
                 </p>
@@ -1284,8 +1321,8 @@ export function ChatPanel() {
                 )}
               </div>
             </div>
-            <div className="flex flex-col justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-white/5 dark:backdrop-blur-xl">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-200">Oturum Kontrolleri</h2>
+            <div className="flex flex-col justify-center gap-3 rounded-2xl border border-slate-200 border-l-4 border-l-teal-500 bg-white p-4 shadow-xl dark:border-white/10 dark:border-l-teal-500 dark:bg-[#0D1B3E]/60">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-300">Oturum Kontrolleri</h2>
               <p className="text-xs text-slate-600 dark:text-slate-300">
                 İlerlemeyi buradan yönetebilir ve hazırsanız yapay zekâ değerlendirmesini başlatabilirsiniz.
               </p>
@@ -1293,10 +1330,9 @@ export function ChatPanel() {
                 <button
                   onClick={handleFinish}
                   disabled={!session || isLoading || blockingForConfig}
-                  className="group relative px-6 py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
+                  className={`rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-50 ${!session || isLoading ? 'bg-slate-400' : 'bg-[#0D1B3E] hover:bg-[#1E3A6E]'}`}
                 >
-                  <div className={`absolute inset-0 ${!session || isLoading ? 'bg-slate-700' : 'bg-gradient-to-r from-blue-600 to-cyan-600'} transition-transform duration-300 group-hover:scale-110`}></div>
-                  <span className="relative">Oturumu Sonlandır</span>
+                  Oturumu Sonlandır
                 </button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">

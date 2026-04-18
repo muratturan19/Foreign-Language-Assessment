@@ -46,8 +46,8 @@ function App() {
     <div
       className={`min-h-screen transition-colors duration-300 ${
         theme === "dark"
-          ? "bg-slate-950 text-slate-100"
-          : "bg-slate-100 text-slate-900"
+          ? "bg-[#071525] text-slate-100"
+          : "bg-[#F0F4F8] text-slate-900"
       }`}
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
@@ -56,13 +56,13 @@ function App() {
             <img
               src={theme === "dark" ? "/talksim_logo_dark.svg" : "/talksim_logo.svg"}
               alt="TalkSim"
-              className="h-12 w-auto rounded-lg"
+              className="h-20 w-auto"
             />
           </div>
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-[#F47B20]/40 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#F47B20] hover:text-[#F47B20] dark:border-[#F47B20]/40 dark:bg-[#0D1B3E] dark:text-slate-100 dark:hover:border-[#F47B20] dark:hover:text-[#F47B20]"
             aria-label="Tema değiştir"
           >
             {theme === "dark" ? "Açık Tema" : "Koyu Tema"}

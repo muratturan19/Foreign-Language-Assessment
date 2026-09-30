@@ -2,6 +2,11 @@
 
 Bu depo, TOEFL / iTEP / IELTS rubriklerini temel alan bir İngilizce konuşma değerlendirme koçunu uçtan uca sunar. Uygulama artık yalnızca bir fikir dokümanı değil; FastAPI tabanlı backend, React + Vite frontend, raporlama katmanı, ses yükleme ve e-posta paylaşımıyla çalışan bir prototip içerir. Ayrıntılı gereksinimler için [docs/SPEC.md](docs/SPEC.md) ve mimari notlar için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) dosyalarına bakabilirsiniz.
 
+### Güncel Durum (Şubat 2026) - "Tek Kod Tabanı" Entegrasyonu
+Bu proje, "Strateji 1: Smart Config" prensibine göre Delta Portal'a entegre edilmiştir.
+- **Portal Modu:** `deploy_fla_smart.ps1` ile dağıtılır. `VITE_APP_MODE=PORTAL` sayesinde UI üzerindeki navigasyon portala yönlendirilir.
+- **Veri Güvenliği:** `audio_files` ve `reports` klasörleri deployment sırasında korunur.
+
 ## Mimari Özet
 
 - **Backend (FastAPI)**

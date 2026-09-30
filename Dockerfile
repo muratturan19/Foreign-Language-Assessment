@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 # Copy frontend package files
 COPY frontend/package*.json frontend/
 WORKDIR /app/frontend
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy all application files
 WORKDIR /app
@@ -27,6 +27,8 @@ COPY . .
 
 # Build frontend
 WORKDIR /app/frontend
+ARG VITE_APP_MODE
+ENV VITE_APP_MODE=$VITE_APP_MODE
 RUN npm run build
 
 # Set working directory back to app root

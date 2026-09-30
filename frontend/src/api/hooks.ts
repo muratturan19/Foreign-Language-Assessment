@@ -23,6 +23,20 @@ const SESSION_KEY = ["session"];
 const TRANSCRIPT_KEY = ["transcript"];
 const GPT5_STATUS_KEY = ["gpt5-status"];
 const EMAIL_STATUS_KEY = ["email-status"];
+const USER_INFO_KEY = ["user-info"];
+
+export function useUserInfo() {
+  return useQuery({
+    queryKey: USER_INFO_KEY,
+    queryFn: async () => {
+      const { data } = await api.get<{ is_platform_admin: boolean; username?: string }>("/api/me");
+      return data;
+    },
+    // Only fetch once
+    staleTime: Infinity, 
+    retry: false
+  });
+}
 
 export function useStartSession() {
   const queryClient = useQueryClient();

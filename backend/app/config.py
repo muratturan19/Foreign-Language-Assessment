@@ -110,6 +110,7 @@ class AppSettings(BaseModel):
     app_base_url: str = Field(default="http://localhost:8000", description="Base URL for report links")
     store_transcripts: bool = Field(default=True, description="Whether to persist transcripts in memory")
     secret_token: str = Field(..., description="Simple bearer token for auth")
+    jwt_secret_key: str | None = Field(default=None, description="Secret key to decode authentication cookies")
     report_language: str = Field(default="en", description="Report language code")
     trusted_origins: tuple[str, ...] = Field(
         default=DEFAULT_TRUSTED_ORIGINS,
@@ -131,6 +132,7 @@ class AppSettings(BaseModel):
             app_base_url=_load_app_base_url(),
             store_transcripts=os.getenv("STORE_TRANSCRIPTS", "true").lower() == "true",
             secret_token=_load_secret_token(),
+            jwt_secret_key=os.getenv("JWT_SECRET_KEY"),
             report_language=os.getenv("REPORT_LANGUAGE", "en"),
             trusted_origins=_load_trusted_origins(),
             email=EmailSettings(

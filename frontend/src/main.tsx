@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChatPanel } from "./components/ChatPanel";
 import "./index.css";
+import { APP_CONFIG } from "./config";
+import { LogOut, Undo2 } from 'lucide-react';
 
 const queryClient = new QueryClient();
 
@@ -54,13 +56,32 @@ function App() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/logo.png"
+              src="logo.png"
               alt="Foreign Language Assessment logosu"
               className="h-12 w-auto"
             />
           </div>
-          <button
-            type="button"
+          <div className="flex items-center gap-2">
+            {APP_CONFIG.IS_PORTAL && (
+              <>
+                <a
+                  href="https://portal.deltaproje.com"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:text-white"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Portal</span>
+                </a>
+                <a
+                  href="https://portal.deltaproje.com/logout"
+                  className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 dark:border-red-900 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Çıkış</span>
+                </a>
+              </>
+            )}
+            <button
+              type="button"
             onClick={toggleTheme}
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:text-white"
             aria-label="Tema değiştir"

@@ -19,3 +19,9 @@ backend/generated_reports/
 backend/protected_reports/
 backend/audio_files/
 backend/reports/
+
+# Kullanıcı ses kayıtları ve değerlendirme raporları — kişisel veri, ASLA commit edilmez (repo herkese açık)
+backend/backend/protected_audio/
+backend/backend/protected_reports/
+backend/protected_audio/
+backend/protected_reports/
